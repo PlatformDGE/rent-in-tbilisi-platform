@@ -1,9 +1,12 @@
 import {
   ArrowLeft,
+  Archive,
   BarChart3,
   Building2,
   Camera,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   ExternalLink,
   FileText,
@@ -17,6 +20,7 @@ import {
   Moon,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Settings,
   ShieldCheck,
@@ -27,6 +31,7 @@ import {
   Upload,
   UserRound,
   UsersRound,
+  Video,
   X,
 } from 'lucide-react';
 import { ChangeEvent, FormEvent, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -68,6 +73,15 @@ type PropertyPhoto = {
   name: string;
   src: string;
   type: 'upload' | 'url';
+};
+
+type PropertyVideo = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  mode: 'metadata' | 'url';
 };
 
 type Property = {
@@ -128,6 +142,7 @@ type Property = {
   photos: PropertyPhoto[];
   mainPhotoId: string;
   videoUrl: string;
+  videoMeta: PropertyVideo | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -262,6 +277,77 @@ const petPolicies: PetPolicy[] = ['Allowed', 'NotAllowed', 'ByAgreement'];
 const currencies: Currency[] = ['$', '₾', '€'];
 const buildingTypes: BuildingType[] = ['NewBuilding', 'OldBuilding', 'HistoricalBuilding', 'Reconstruction'];
 const renovationTypes: RenovationType[] = ['New', 'White', 'Grey', 'Yellow', 'Mixed', 'Old', 'Retro', 'UnderRepair'];
+const cities = ['Tbilisi', 'Batumi', 'Kutaisi', 'Rustavi', 'Zugdidi', 'Mestia', 'Sighnaghi', 'Other'];
+const districtOptions = [
+  'Vera',
+  'Mtatsminda',
+  'Vake',
+  'Sololaki',
+  'Kukia',
+  'Nadzaladevi',
+  'Naxalovka',
+  'SavnetisUbani',
+  'Tskneti',
+  'Chugureti',
+  'VazhaPshavela',
+  'Nutsubidze',
+  'Saburtalo',
+  'Didube',
+  'Gldani',
+  'Avlabari',
+  'Isani',
+  'Samgori',
+  'Digomi',
+  'DidiDigomi',
+  'DigomiMassive',
+  'Digomi1to9',
+  'Varketili',
+  'Ortachala',
+  'Abanotubani',
+  'Saguramo',
+  'Krtsanisi',
+  'Vashlijvari',
+  'Temqa',
+  'Iverubani',
+  'Vazisubani',
+  'Afrika',
+  'QvemoPonichala',
+  'Ponichala',
+  'Avchala',
+  'Bagebi',
+  'Lisi',
+  'Tskhneti',
+  'OutOfTown',
+];
+const metroOptions = [
+  '',
+  'LibertySquare',
+  'Rustaveli',
+  'Marjanishvili',
+  'StationSquare',
+  'Tsereteli',
+  'Gotsiridze',
+  'Nadzaladevi',
+  'Didube',
+  'Grmagele',
+  'Guramishvili',
+  'Sarajishvili',
+  'AhmeteliTheatre',
+  'STUniversity',
+  'VazhaPshavela',
+  'Delisi',
+  'TCUniversity',
+  'MCUniversity',
+  'AvlabariMetro',
+  'IsaniMetro',
+  '300Aragveli',
+  'SamgoriMetro',
+  'Varketili',
+];
+const sourceOptions = ['Owner', 'Agent', 'Telegram', 'Google Sheets', 'Website', 'Referral', 'Old Database', 'Other'];
+const heatingOptions = ['CentralHeating', 'GasHeating', 'ElectricalHeating', 'ACHeating', 'Fireplace'];
+const MAX_TELEGRAM_PHOTOS = 9;
+const MAX_VIDEO_SIZE_MB = 1000;
 const authRoles: AuthRole[] = ['Администратор', 'Оператор', 'Агент'];
 const teamRoles: TeamRole[] = [
   'Рекрут 20%',
@@ -297,8 +383,8 @@ const fallbackPhotos: PropertyPhoto[] = [
 const defaultBrandSettings: BrandSettings = {
   brandName: 'Rent in Tbilisi',
   telegramUsername: '@David_Tibelashvili',
-  testChannelId: '@rentintbilisi_test',
-  productionChannelId: '@rentintbilisi',
+  testChannelId: 'https://t.me/+AmfvOMugNNgwODYy',
+  productionChannelId: '@rent_in_tbilisi',
   publishingMode: 'Demo',
   defaultLanguage: 'EN',
   defaultCurrency: '$',
@@ -368,6 +454,7 @@ const emptyProperty: PropertyFormState = {
   photos: [],
   mainPhotoId: '',
   videoUrl: '',
+  videoMeta: null,
 };
 
 const starterProperties: Property[] = [
@@ -422,6 +509,7 @@ const starterProperties: Property[] = [
     photos: fallbackPhotos,
     mainPhotoId: fallbackPhotos[0].id,
     videoUrl: '',
+    videoMeta: null,
     createdAt: '2026-07-01T10:00:00.000Z',
     updatedAt: '2026-07-01T10:00:00.000Z',
   },
@@ -479,6 +567,7 @@ const starterProperties: Property[] = [
     ],
     mainPhotoId: 'url-sololaki-main',
     videoUrl: '',
+    videoMeta: null,
     createdAt: '2026-06-28T12:20:00.000Z',
     updatedAt: '2026-06-28T12:20:00.000Z',
   },
@@ -539,6 +628,7 @@ const starterProperties: Property[] = [
     ],
     mainPhotoId: 'url-saburtalo-main',
     videoUrl: '',
+    videoMeta: null,
     createdAt: '2026-06-20T09:10:00.000Z',
     updatedAt: '2026-06-20T09:10:00.000Z',
   },
@@ -548,10 +638,10 @@ const extraSeedProperties: Property[] = [
   ['RIT-1004', 'Rent', 'Vera', 'Rustaveli', '25 Barnovi Street', '980', '58', '1', '4', '9', 'Rented', 'Nino Beridze'],
   ['RIT-1005', 'Rent', 'Saburtalo', 'MCUniversity', '14b Shalva Nutsubidze Street', '1000', '105', '2', '5', '12', 'On Advertising', 'David Tibelashvili'],
   ['RIT-1006', 'Sale', 'Vake', 'Delisi', 'Mtskheta Street 18', '245000', '118', '3', '6', '14', 'On Advertising', 'Ana Lomidze'],
-  ['RIT-1007', 'Rent', 'Didi Digomi', 'Didube', 'Mirian Mepe Avenue 41', '650', '72', '2', '3', '8', 'In Progress', 'Nino Beridze'],
-  ['RIT-1008', 'Sale', 'Krtsanisi', '300 Aragveli', 'Krtsanisi Residence', '320000', '140', '3', '9', '12', 'Sold', 'David Tibelashvili'],
+  ['RIT-1007', 'Rent', 'DidiDigomi', 'Didube', 'Mirian Mepe Avenue 41', '650', '72', '2', '3', '8', 'In Progress', 'Nino Beridze'],
+  ['RIT-1008', 'Sale', 'Krtsanisi', '300Aragveli', 'Krtsanisi Residence', '320000', '140', '3', '9', '12', 'Sold', 'David Tibelashvili'],
   ['RIT-1009', 'Rent', 'Varketili', 'Varketili', 'Javakheti Street 7', '480', '46', '1', '2', '9', 'Archived', 'Mari Operator'],
-  ['RIT-1010', 'Daily Rent', 'Old Tbilisi', 'AvlabariMetro', 'Metekhi Rise 4', '95', '38', '1', '2', '4', 'New', 'Ana Lomidze'],
+  ['RIT-1010', 'Daily Rent', 'Avlabari', 'AvlabariMetro', 'Metekhi Rise 4', '95', '38', '1', '2', '4', 'New', 'Ana Lomidze'],
 ].map(([id, dealType, district, metro, address, price, area, bedrooms, floor, totalFloors, status, agent], index) => {
   const photo = {
     id: `${id}-photo`,
@@ -995,6 +1085,44 @@ function normalizePetPolicy(value: unknown): PetPolicy {
   return map[String(value)] || 'ByAgreement';
 }
 
+function normalizeCity(value: unknown) {
+  const city = String(value || 'Tbilisi');
+  return cities.includes(city) ? city : 'Other';
+}
+
+function normalizeDistrictValue(value: unknown) {
+  const map: Record<string, string> = {
+    'Savnetis Ubani': 'SavnetisUbani',
+    'Vazha Pshavela': 'VazhaPshavela',
+    'Didi Digomi': 'DidiDigomi',
+    'Digomi Massive': 'DigomiMassive',
+    'Old Tbilisi': 'Avlabari',
+    'Qvemo Ponichala': 'QvemoPonichala',
+    Tskhneti: 'Tskhneti',
+    Tskneti: 'Tskneti',
+  };
+  const district = map[String(value)] || String(value || '');
+  return districtOptions.includes(district) ? district : 'OutOfTown';
+}
+
+function normalizeMetroValue(value: unknown) {
+  const map: Record<string, string> = {
+    'Liberty Square': 'LibertySquare',
+    'Station Square': 'StationSquare',
+    'Ahmeteli Theatre': 'AhmeteliTheatre',
+    'Vazha Pshavela': 'VazhaPshavela',
+    'Medical University': 'MCUniversity',
+    '300 Aragveli': '300Aragveli',
+  };
+  const metro = map[String(value)] || String(value || '');
+  return metroOptions.includes(metro) ? metro : '';
+}
+
+function normalizeSource(value: unknown) {
+  const source = String(value || 'Owner');
+  return sourceOptions.includes(source) ? source : 'Other';
+}
+
 function mergeById<T extends { id: string }>(saved: T[], seeds: T[]) {
   const ids = new Set(saved.map((item) => item.id));
   return [...saved, ...seeds.filter((item) => !ids.has(item.id))];
@@ -1017,14 +1145,14 @@ function normalizeProperty(property: Partial<Property> & Record<string, unknown>
     updatedAt: String(property.updatedAt || property.createdAt || new Date().toISOString()),
     dealType: normalizeDealType(property.dealType),
     category: normalizeCategoryValue(property.category),
-    city: String(property.city || 'Tbilisi'),
-    district: String(property.district || ''),
-    metro: String(property.metro || ''),
+    city: normalizeCity(property.city),
+    district: normalizeDistrictValue(property.district),
+    metro: normalizeMetroValue(property.metro),
     address: String(property.address || ''),
     mapLink: String(property.mapLink || ''),
     cadastralCode: String(property.cadastralCode || ''),
     building: String(property.building || ''),
-    source: String(property.source || 'Owner'),
+    source: normalizeSource(property.source),
     titleRu: String(property.titleRu || property.address || ''),
     titleEn: String(property.titleEn || property.address || ''),
     descriptionRu: String(property.descriptionRu || property.notes || property.internalNotes || ''),
@@ -1075,6 +1203,7 @@ function normalizeProperty(property: Partial<Property> & Record<string, unknown>
     photos,
     mainPhotoId: String(property.mainPhotoId || photos[0]?.id || ''),
     videoUrl: String(property.videoUrl || ''),
+    videoMeta: property.videoMeta && typeof property.videoMeta === 'object' ? (property.videoMeta as PropertyVideo) : null,
   };
   return normalized;
 }
@@ -1161,6 +1290,7 @@ function pricePerM2(property: Pick<Property, 'area' | 'price'>) {
 
 function priceRangeTag(price: string) {
   const numeric = safeNumber(price);
+  if (numeric <= 0) return '';
   if (numeric < 300) return '#Price0to300';
   if (numeric < 500) return '#Price300to500';
   if (numeric < 700) return '#Price500to700';
@@ -1187,10 +1317,12 @@ const districtTags: Record<string, string> = {
   Kukia: '#Kukia',
   Nadzaladevi: '#Nadzaladevi',
   Naxalovka: '#Naxalovka',
+  SavnetisUbani: '#SavnetisUbani',
   'Savnetis Ubani': '#SavnetisUbani',
   Tskneti: '#Tskneti',
   Tskhneti: '#Tskhneti',
   Chugureti: '#Chugureti',
+  VazhaPshavela: '#VazhaPshavela',
   'Vazha Pshavela': '#VazhaPshavela',
   Nutsubidze: '#Nutsubidze',
   Saburtalo: '#Saburtalo',
@@ -1200,8 +1332,11 @@ const districtTags: Record<string, string> = {
   Isani: '#Isani',
   Samgori: '#Samgori',
   Digomi: '#Digomi',
+  DidiDigomi: '#DidiDigomi',
   'Didi Digomi': '#DidiDigomi',
+  DigomiMassive: '#DigomiMassive',
   'Digomi Massive': '#DigomiMassive',
+  Digomi1to9: '#Digomi1to9',
   Varketili: '#Varketili',
   Ortachala: '#Ortachala',
   Abanotubani: '#Abanotubani',
@@ -1212,6 +1347,7 @@ const districtTags: Record<string, string> = {
   Iverubani: '#Iverubani',
   Vazisubani: '#Vazisubani',
   Afrika: '#Afrika',
+  QvemoPonichala: '#QvemoPonichala',
   Ponichala: '#Ponichala',
   Avchala: '#Avchala',
   Bagebi: '#Bagebi',
@@ -1221,9 +1357,11 @@ const districtTags: Record<string, string> = {
 
 const metroTags: Record<string, string> = {
   'Liberty Square': '#LibertySquare',
+  LibertySquare: '#LibertySquare',
   Rustaveli: '#Rustaveli',
   Marjanishvili: '#Marjanishvili',
   'Station Square': '#StationSquare',
+  StationSquare: '#StationSquare',
   Tsereteli: '#Tsereteli',
   Gotsiridze: '#Gotsiridze',
   Nadzaladevi: '#Nadzaladevi',
@@ -1232,8 +1370,10 @@ const metroTags: Record<string, string> = {
   Guramishvili: '#Guramishvili',
   Sarajishvili: '#Sarajishvili',
   'Ahmeteli Theatre': '#AhmeteliTheatre',
+  AhmeteliTheatre: '#AhmeteliTheatre',
   STUniversity: '#STUniversity',
   'Vazha Pshavela': '#VazhaPshavela',
+  VazhaPshavela: '#VazhaPshavela',
   Delisi: '#Delisi',
   TCUniversity: '#TCUniversity',
   'Medical University': '#MCUniversity',
@@ -1260,7 +1400,9 @@ function tagFromMap(map: Record<string, string>, value: string) {
 }
 
 function bedTag(value: string) {
-  const bedrooms = Math.min(Math.max(Math.round(safeNumber(value)), 1), 4);
+  const numeric = safeNumber(value);
+  if (numeric <= 0) return '';
+  const bedrooms = Math.min(Math.max(Math.round(numeric), 1), 4);
   return `#${bedrooms}Bed`;
 }
 
@@ -1277,6 +1419,14 @@ function petTag(value: PetPolicy) {
 function cleanTagValue(value: string, fallback: string) {
   const normalized = value.replace(/[^a-zA-Z0-9]/g, '');
   return normalized || fallback;
+}
+
+function controlledHashTag(value: string, allowed: readonly string[]) {
+  return allowed.includes(value) ? `#${value}` : '';
+}
+
+function telegramPhotoCount(property: Property) {
+  return Math.min(property.photos.length, MAX_TELEGRAM_PHOTOS);
 }
 
 function getMainPhoto(property: Property) {
@@ -1421,7 +1571,9 @@ function buildTelegramPost(property: Property, settings: BrandSettings, language
   const districtTag = tagFromMap(districtTags, property.district) || '#OutOfTown';
   const metroTag = tagFromMap(metroTags, property.metro);
   const floor = property.floor && property.totalFloors ? `${property.floor}/${property.totalFloors} Floor` : '';
-  const primaryLineTags = [bedTag(property.bedrooms), categoryTags[property.category], 'for', dealTag(dealType)].join(' ');
+  const primaryLineTags = [bedTag(property.bedrooms), categoryTags[property.category], 'for', dealTag(dealType)]
+    .filter(Boolean)
+    .join(' ');
   const amenityRows = [
     [property.balcony && '#Balcony', property.internet && '#WiFi', property.tv && '#TV'],
     [property.stove && '#Stove', property.vacuumCleaner && '#VacuumCleaner'],
@@ -1431,33 +1583,43 @@ function buildTelegramPost(property: Property, settings: BrandSettings, language
   ]
     .map((row) => row.filter(Boolean).map((tag) => `✅ ${tag}`).join(' '))
     .filter(Boolean);
-  const heatingTag = `#${cleanTagValue(property.heating, 'CentralHeating')}`;
-  const showerTag = property.shower ? ' | #Shower' : '';
-  const money =
-    dealType === 'Rent' || dealType === 'Daily Rent'
+  const buildingLine = [controlledHashTag(property.buildingType, buildingTypes), controlledHashTag(property.renovation, renovationTypes)]
+    .filter(Boolean)
+    .join(' | ');
+  const specLine = [property.area ? `${property.area} sq.m` : '', floor].filter(Boolean).join(' | ');
+  const heatingLine = [controlledHashTag(property.heating, heatingOptions), property.shower ? '#Shower' : ''].filter(Boolean).join(' | ');
+  const moneyValue =
+    property.price && (dealType === 'Rent' || dealType === 'Daily Rent')
       ? `${property.price}${property.currency} + Deposit ${property.deposit || property.price}${property.currency}`
-      : `${property.price}${property.currency}`;
+      : property.price
+        ? `${property.price}${property.currency}`
+        : '';
+  const money =
+    moneyValue && (dealType === 'Rent' || dealType === 'Daily Rent' || dealType === 'Sale') ? `💰${moneyValue}` : '';
   const contact = property.publicationContact || settings.mainContact;
   const contactSignature = language === 'RU' ? settings.defaultSignature : settings.defaultSignature;
+  const tenantsLine = property.tenantsCount && dealType !== 'Sale' ? `👫Tenants: ${property.tenantsCount}` : '';
+  const petsLine = dealType !== 'Sale' ? `🐕Pets: ${petTag(property.petPolicy)}` : '';
+  const priceTag = priceRangeTag(property.price);
 
   return [
     `${districtTag}${metroTag ? ` 🚇 ${metroTag}` : ''}`,
-    `📍${property.address}`,
+    property.address ? `📍${property.address}` : '',
     '',
     ...(property.exclusive ? ['❗️#Exclusive', ''] : []),
     `🏢 ${primaryLineTags}`,
-    `✨ #${property.buildingType} | #${property.renovation}`,
-    `🏠${property.area || '-'} sq.m | ${floor || '-'} |`,
-    `${heatingTag}${showerTag}`,
+    buildingLine ? `✨ ${buildingLine}` : '',
+    specLine ? `🏠${specLine} |` : '',
+    heatingLine,
     '',
     ...amenityRows,
     '',
-    `👫Tenants: ${property.tenantsCount || '1-4'}`,
-    `🐕Pets: ${petTag(property.petPolicy)}`,
+    tenantsLine,
+    petsLine,
     '',
-    `💰${money}`,
+    money,
     ...(settings.includeZeroCommission ? ['0% Commission'] : []),
-    priceRangeTag(property.price),
+    priceTag,
     '',
     `➡️🏢 ${contact} |`,
     `${settings.phone} ${contactSignature}`,
@@ -1467,6 +1629,140 @@ function buildTelegramPost(property: Property, settings: BrandSettings, language
     .filter((line, index, lines) => line !== '' || lines[index - 1] !== '')
     .join('\n')
     .trim();
+}
+
+function parseTelegramPostToProperty(text: string): PropertyFormState {
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const hasTag = (tag: string) => new RegExp(`${tag}(?![A-Za-z0-9_])`).test(text);
+  const district =
+    districtOptions.find((option) => {
+      const tag = districtTags[option];
+      return tag ? hasTag(tag) : false;
+    }) || '';
+  const metro =
+    metroOptions.find((option) => {
+      const tag = metroTags[option];
+      return tag ? hasTag(tag) : false;
+    }) || '';
+  const addressLine = lines.find((line) => line.startsWith('📍') && !line.includes('APARTMENTS ON MAP'));
+  const bedroomMatch = text.match(/#([1-4])Bed/i);
+  const areaMatch = text.match(/(\d+(?:\.\d+)?)\s*sq\.?m/i);
+  const floorMatch = text.match(/(\d+)\s*\/\s*(\d+)\s*Floor/i);
+  const tenantsMatch = text.match(/Tenants:\s*([^\n]+)/i);
+  const moneyMatch = text.match(/💰\s*(\d+(?:\.\d+)?)/);
+  const depositMatch = text.match(/Deposit\s*(\d+(?:\.\d+)?)/i);
+  const contactMatch = text.match(/(@[A-Za-z0-9_]+)/);
+  const phoneMatch = text.match(/\+995\s*\d{3}\s*\d{2}\s*\d{2}\s*\d{2}/);
+  const category: Category = hasTag('#House') ? 'House' : hasTag('#Commercial') ? 'Commercial' : 'Apartment';
+  const dealType: DealType = hasTag('#Sale') ? 'Sale' : hasTag('#DailyRent') ? 'Daily Rent' : 'Rent';
+  const buildingType = buildingTypes.find((item) => hasTag(`#${item}`)) || 'NewBuilding';
+  const renovation = renovationTypes.find((item) => hasTag(`#${item}`)) || 'White';
+  const heating = heatingOptions.find((item) => hasTag(`#${item}`)) || 'CentralHeating';
+  const petPolicy: PetPolicy = hasTag('#Allowed') ? 'Allowed' : hasTag('#NotAllowed') ? 'NotAllowed' : 'ByAgreement';
+
+  return {
+    ...emptyProperty,
+    dealType,
+    category,
+    city: 'Tbilisi',
+    district,
+    metro,
+    address: addressLine ? addressLine.replace(/^📍\s*/, '') : '',
+    source: 'Telegram',
+    titleRu: '',
+    titleEn: '',
+    price: moneyMatch?.[1] || '',
+    area: areaMatch?.[1] || '',
+    bedrooms: bedroomMatch?.[1] || '',
+    rooms: bedroomMatch?.[1] ? String(Number(bedroomMatch[1]) + 1) : '',
+    floor: floorMatch?.[1] || '',
+    totalFloors: floorMatch?.[2] || '',
+    tenantsCount: tenantsMatch?.[1]?.trim() || '',
+    buildingType,
+    renovation,
+    heating,
+    airConditioner: hasTag('#Conditioner'),
+    balcony: hasTag('#Balcony'),
+    elevator: hasTag('#Elevator'),
+    parking: hasTag('#ParkingPlace'),
+    oven: hasTag('#Oven'),
+    stove: hasTag('#Stove'),
+    tv: hasTag('#TV'),
+    vacuumCleaner: hasTag('#VacuumCleaner'),
+    shower: hasTag('#Shower'),
+    internet: hasTag('#WiFi'),
+    petPolicy,
+    deposit: depositMatch?.[1] || '',
+    publicationContact: contactMatch?.[1] || emptyProperty.publicationContact,
+    ownerPhone: phoneMatch?.[0] || '',
+    exclusive: hasTag('#Exclusive'),
+    internalNotes: 'Imported from Telegram post',
+  };
+}
+
+function splitCsvLine(line: string) {
+  const cells: string[] = [];
+  let current = '';
+  let quoted = false;
+  for (const char of line) {
+    if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current.trim());
+  return cells.map((cell) => cell.replace(/^"|"$/g, ''));
+}
+
+function parseCsvProperties(csv: string): PropertyFormState[] {
+  const rows = csv
+    .split('\n')
+    .map((row) => row.trim())
+    .filter(Boolean);
+  if (rows.length < 2) return [];
+  const headers = splitCsvLine(rows[0]).map((header) => header.trim().toLowerCase());
+  return rows.slice(1).map((row) => {
+    const cells = splitCsvLine(row);
+    const get = (...names: string[]) => {
+      const index = headers.findIndex((header) => names.includes(header));
+      return index >= 0 ? cells[index] || '' : '';
+    };
+    const photoUrl = get('photo', 'photo_url', 'photoUrl'.toLowerCase(), 'image');
+    const photo: PropertyPhoto | undefined = photoUrl
+      ? { id: crypto.randomUUID(), name: 'CSV photo', src: photoUrl, type: 'url' }
+      : undefined;
+    return {
+      ...emptyProperty,
+      dealType: normalizeDealType(get('dealtype', 'deal_type', 'type')),
+      category: normalizeCategoryValue(get('category')) as Category,
+      city: normalizeCity(get('city')),
+      district: normalizeDistrictValue(get('district', 'area')),
+      metro: normalizeMetroValue(get('metro')),
+      address: get('address'),
+      source: 'Google Sheets',
+      price: get('price'),
+      area: get('area', 'sqm', 'sq.m'),
+      bedrooms: get('bedrooms', 'bed'),
+      rooms: get('rooms'),
+      floor: get('floor'),
+      totalFloors: get('totalfloors', 'total_floors'),
+      status: normalizeStatusValue(get('status')),
+      agent: get('agent') || emptyProperty.agent,
+      owner: get('owner'),
+      ownerPhone: get('ownerphone', 'owner_phone', 'phone'),
+      ownerTelegram: get('ownertelegram', 'owner_telegram', 'telegram'),
+      photos: photo ? [photo] : [],
+      mainPhotoId: photo?.id || '',
+      internalNotes: 'Imported from CSV',
+    };
+  });
 }
 
 function AppProvider({ children }: { children: ReactNode }) {
@@ -1606,6 +1902,7 @@ export function App() {
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/districts" element={<DistrictsPage />} />
             <Route path="/publications" element={<PublicationsPage />} />
+            <Route path="/import" element={<ImportPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -1618,7 +1915,11 @@ export function App() {
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className={compact ? 'logo compactLogo' : 'logo'}>
-      <span className="logoMark">M</span>
+      <span className="logoMark" aria-label="Rent in Tbilisi logo placeholder">
+        <span>RENT</span>
+        <i />
+        <span>TBILISI</span>
+      </span>
       <div>
         <strong>Molecula</strong>
         <span>Rent in Tbilisi</span>
@@ -1723,6 +2024,7 @@ function ProtectedLayout() {
           <NavItem icon={BarChart3} label="Аналитика" to="/analytics" />
           <NavItem icon={Building2} label="Районы и цены" to="/districts" />
           <NavItem icon={FileText} label="Публикации" to="/publications" />
+          <NavItem icon={Upload} label="Импорт" to="/import" />
           <NavItem icon={Settings} label="Настройки" to="/settings" />
         </nav>
 
@@ -1801,12 +2103,14 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith('/analytics')) return 'Аналитика';
   if (pathname.startsWith('/districts')) return 'Районы и цены';
   if (pathname.startsWith('/publications')) return 'Публикации';
+  if (pathname.startsWith('/import')) return 'Импорт объектов';
   if (pathname.startsWith('/settings')) return 'Настройки бренда';
   return 'Dashboard';
 }
 
 function DashboardPage() {
   const { agents, deals, properties, publications } = useCrm();
+  const [activeMetric, setActiveMetric] = useState<string | null>(null);
   const stats = getPropertyStats(properties);
   const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const monthCommission = deals
@@ -1827,6 +2131,56 @@ function DashboardPage() {
     { label: 'Активные агенты', value: agents.filter((agent) => agent.isActive).length, icon: UsersRound },
     { label: 'Публикации за неделю', value: thisWeekCount(publications), icon: MessageCircle },
   ];
+  const metricItems = (() => {
+    if (!activeMetric) return [];
+    if (activeMetric === 'Всего объектов') return properties.map((property) => ({ title: property.titleRu || property.address, meta: property.id, to: `/properties/${property.id}` }));
+    if (activeMetric === 'Активные') {
+      return properties
+        .filter((property) => !['Rented', 'Sold', 'Archived'].includes(property.status))
+        .map((property) => ({ title: property.titleRu || property.address, meta: property.status, to: `/properties/${property.id}` }));
+    }
+    if (activeMetric === 'На рекламе') {
+      return properties
+        .filter((property) => property.status === 'On Advertising')
+        .map((property) => ({ title: property.titleRu || property.address, meta: property.agent, to: `/properties/${property.id}` }));
+    }
+    if (activeMetric === 'Эксклюзивы') {
+      return properties
+        .filter((property) => property.exclusive)
+        .map((property) => ({ title: property.titleRu || property.address, meta: property.district, to: `/properties/${property.id}` }));
+    }
+    if (activeMetric.includes('Сдано')) {
+      return properties
+        .filter((property) => property.status === 'Rented')
+        .map((property) => ({ title: property.titleRu || property.address, meta: formatPrice(property), to: `/properties/${property.id}` }));
+    }
+    if (activeMetric.includes('Продано')) {
+      return properties
+        .filter((property) => property.status === 'Sold')
+        .map((property) => ({ title: property.titleRu || property.address, meta: formatPrice(property), to: `/properties/${property.id}` }));
+    }
+    if (activeMetric.includes('Добавлено')) {
+      return properties
+        .filter((property) => Date.parse(property.createdAt) >= Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .map((property) => ({ title: property.titleRu || property.address, meta: new Date(property.createdAt).toLocaleDateString('ru-RU'), to: `/properties/${property.id}` }));
+    }
+    if (activeMetric.includes('Комиссия')) {
+      return deals.map((deal) => ({ title: `${deal.propertyId} · ${deal.agent}`, meta: `${deal.commission} · ${deal.status}`, to: '/deals' }));
+    }
+    if (activeMetric === 'Активные агенты') {
+      return agents
+        .filter((agent) => agent.isActive)
+        .map((agent) => ({ title: agent.name, meta: `${agent.role} · ${agent.commissionPercent}%`, to: `/agents/${agent.id}` }));
+    }
+    if (activeMetric.includes('Публикации')) {
+      return publications.map((publication) => ({
+        title: publication.propertyTitle,
+        meta: `${publication.channel} · ${publication.status}`,
+        to: '/publications',
+      }));
+    }
+    return properties.map((property) => ({ title: property.titleRu || property.address, meta: property.status, to: `/properties/${property.id}` }));
+  })();
 
   return (
     <PageFrame
@@ -1863,16 +2217,40 @@ function DashboardPage() {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <article key={card.label}>
+            <button className="metricButton" key={card.label} onClick={() => setActiveMetric(card.label)} type="button">
               <span>
                 <Icon size={17} />
                 {card.label}
               </span>
               <strong>{card.value}</strong>
-            </article>
+            </button>
           );
         })}
       </section>
+
+      {activeMetric && (
+        <div className="modalBackdrop" role="dialog" aria-modal="true">
+          <section className="confirmDialog dashboardDrawer">
+            <button className="iconButton closeButton" onClick={() => setActiveMetric(null)} type="button" aria-label="Закрыть">
+              <X size={18} />
+            </button>
+            <h2>{activeMetric}</h2>
+            <p>Быстрый список для перехода из KPI в рабочую карточку.</p>
+            <div className="drawerList">
+              {metricItems.length === 0 ? (
+                <span>Нет данных для этого показателя</span>
+              ) : (
+                metricItems.slice(0, 18).map((item, index) => (
+                  <Link key={`${item.title}-${index}`} to={item.to} onClick={() => setActiveMetric(null)}>
+                    <strong>{item.title}</strong>
+                    <span>{item.meta || '-'}</span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       <section className="workspace">
         <div className="sectionHeader">
@@ -2129,11 +2507,14 @@ function PropertyCard({ onDelete, property }: { onDelete?: (property: Property) 
 }
 
 function PropertyDetailPage() {
-  const { deleteProperty, properties, showToast } = useCrm();
+  const { addPublication, agents, brandSettings, deleteProperty, owners, properties, session, showToast, upsertProperty } = useCrm();
   const navigate = useNavigate();
   const { propertyId } = useParams();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmProductionOpen, setConfirmProductionOpen] = useState(false);
   const property = properties.find((item) => item.id === propertyId);
+  const agent = property ? agents.find((item) => item.name === property.agent) : undefined;
+  const owner = property ? owners.find((item) => item.name === property.owner) : undefined;
 
   if (!property) {
     return (
@@ -2150,14 +2531,89 @@ function PropertyDetailPage() {
     navigate('/properties');
   }
 
+  function archiveProperty(nextStatus: PropertyStatus) {
+    if (!property) return;
+    upsertProperty({ ...property, status: nextStatus, updatedAt: new Date().toISOString() });
+    showToast(nextStatus === 'Archived' ? 'Объект перемещен в архив' : 'Объект возвращен в работу');
+  }
+
+  async function copyObjectPost() {
+    if (!property) return;
+    const postText = buildTelegramPost(property, brandSettings, brandSettings.defaultLanguage, property.dealType);
+    await copyText(postText);
+    addPublication({
+      id: crypto.randomUUID(),
+      propertyId: property.id,
+      propertyTitle: property.titleEn || property.titleRu || property.address,
+      date: new Date().toISOString(),
+      author: session?.name || property.agent || 'Molecula user',
+      channel: 'Demo',
+      status: 'Copied',
+      text: postText,
+      photosCount: telegramPhotoCount(property),
+    });
+    showToast('Пост скопирован и записан в историю');
+  }
+
+  async function publishObjectViaBackend(channel: 'Test' | 'Production') {
+    if (!property) return;
+    const postText = buildTelegramPost(property, brandSettings, brandSettings.defaultLanguage, property.dealType);
+    const endpoint = channel === 'Test' ? '/api/telegram/publish-test' : '/api/telegram/publish-production';
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          objectId: property.id,
+          text: postText,
+          photos: property.photos.slice(0, MAX_TELEGRAM_PHOTOS).map((photo) => photo.src),
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = (await response.json()) as { messageLink?: string };
+      addPublication({
+        id: crypto.randomUUID(),
+        propertyId: property.id,
+        propertyTitle: property.titleEn || property.titleRu || property.address,
+        date: new Date().toISOString(),
+        author: session?.name || property.agent || 'Molecula user',
+        channel,
+        status: channel === 'Test' ? 'Test Published' : 'Production Published',
+        text: postText,
+        photosCount: telegramPhotoCount(property),
+        messageLink: result.messageLink,
+      });
+      showToast(channel === 'Test' ? 'Тестовая публикация отправлена' : 'Production публикация отправлена');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Backend endpoint not connected';
+      addPublication({
+        id: crypto.randomUUID(),
+        propertyId: property.id,
+        propertyTitle: property.titleEn || property.titleRu || property.address,
+        date: new Date().toISOString(),
+        author: session?.name || property.agent || 'Molecula user',
+        channel,
+        status: 'Error',
+        text: postText,
+        photosCount: telegramPhotoCount(property),
+        error: message,
+      });
+      showToast('Telegram endpoint недоступен. Ошибка записана в историю.', 'warning');
+    }
+  }
+
   return (
     <PageFrame
       actions={
         <div className="quickActions">
           <Link className="secondaryButton" to={`/post-preview?property=${property.id}`}>
             <Smartphone size={18} />
-            Telegram post
+            Создать Telegram post
           </Link>
+          <button className="secondaryButton" onClick={copyObjectPost} type="button">
+            <Copy size={18} />
+            Скопировать пост
+          </button>
           <Link className="primaryButton" to={`/properties/${property.id}/edit`}>
             <Pencil size={18} />
             Редактировать
@@ -2190,19 +2646,66 @@ function PropertyDetailPage() {
             <InfoItem label="Спальни / комнаты" value={`${property.bedrooms || '-'} / ${property.rooms || '-'}`} />
             <InfoItem label="Этаж" value={`${property.floor || '-'}/${property.totalFloors || '-'}`} />
             <InfoItem label="Комиссия клиента" value={property.clientCommission} />
+            <InfoItem label="Комиссия собственника" value={property.ownerCommission || '-'} />
+            <InfoItem label="Налог включен" value={property.taxIncluded ? 'Да' : 'Нет'} />
+            <InfoItem label="Город" value={property.city} />
+            <InfoItem label="Источник" value={property.source || '-'} />
+            <InfoItem label="Агент" value={property.agent || '-'} />
+            <InfoItem label="Оператор" value={property.operator || '-'} />
             <InfoItem label="Собственник" value={property.owner || '-'} />
             <InfoItem label="Телефон собственника" value={property.ownerPhone || '-'} />
             <InfoItem label="Telegram собственника" value={property.ownerTelegram || '-'} />
             <InfoItem label="Эксклюзив" value={property.exclusive ? 'Да' : 'Нет'} />
+            <InfoItem label="Фото в Telegram album" value={`${telegramPhotoCount(property)}/${MAX_TELEGRAM_PHOTOS}`} />
+            <InfoItem label="Видео" value={property.videoMeta?.name || property.videoUrl || '-'} />
           </div>
         </div>
         <aside className="workspace compact">
           <h2>Операции</h2>
           <div className="stackedActions">
+            <Link className="secondaryButton fullWidth" to={`/post-preview?property=${property.id}`}>
+              <Smartphone size={18} />
+              Send to Publication
+            </Link>
+            <button className="secondaryButton fullWidth" onClick={() => void publishObjectViaBackend('Test')} type="button">
+              <MessageCircle size={18} />
+              Publish Test Channel
+            </button>
+            <button className="secondaryButton fullWidth dangerText" onClick={() => setConfirmProductionOpen(true)} type="button">
+              <MessageCircle size={18} />
+              Publish Production
+            </button>
+            {property.mapLink && (
+              <a className="secondaryButton fullWidth" href={property.mapLink} target="_blank" rel="noreferrer">
+                <ExternalLink size={18} />
+                Open Map
+              </a>
+            )}
+            {agent && (
+              <Link className="secondaryButton fullWidth" to={`/agents/${agent.id}`}>
+                <UserRound size={18} />
+                Open Agent
+              </Link>
+            )}
+            <Link className="secondaryButton fullWidth" to="/owners">
+              <Home size={18} />
+              {owner ? `Open Owner: ${owner.name}` : 'Open Owner'}
+            </Link>
             <Link className="primaryButton fullWidth" to={`/properties/${property.id}/edit`}>
               <Pencil size={18} />
               Редактировать
             </Link>
+            {property.status === 'Archived' ? (
+              <button className="secondaryButton fullWidth" onClick={() => archiveProperty('In Progress')} type="button">
+                <RotateCcw size={18} />
+                Вернуть из архива
+              </button>
+            ) : (
+              <button className="secondaryButton fullWidth" onClick={() => archiveProperty('Archived')} type="button">
+                <Archive size={18} />
+                Move to Archive
+              </button>
+            )}
             <button className="secondaryButton fullWidth dangerText" onClick={() => setConfirmOpen(true)} type="button">
               <Trash2 size={18} />
               Удалить объект
@@ -2217,20 +2720,67 @@ function PropertyDetailPage() {
         onCancel={() => setConfirmOpen(false)}
         onConfirm={confirmDelete}
       />
+      <ConfirmDialog
+        confirmLabel="Опубликовать"
+        isOpen={confirmProductionOpen}
+        title="Production публикация?"
+        text="Вы точно хотите опубликовать в основной канал Rent in Tbilisi?"
+        onCancel={() => setConfirmProductionOpen(false)}
+        onConfirm={() => {
+          setConfirmProductionOpen(false);
+          void publishObjectViaBackend('Production');
+        }}
+      />
     </PageFrame>
   );
 }
 
 function ObjectGallery({ property }: { property: Property }) {
-  const mainPhoto = getMainPhoto(property);
+  const [activePhotoId, setActivePhotoId] = useState(property.mainPhotoId || property.photos[0]?.id || '');
+  useEffect(() => {
+    setActivePhotoId(property.mainPhotoId || property.photos[0]?.id || '');
+  }, [property.id, property.mainPhotoId, property.photos]);
+  const activeIndex = Math.max(
+    property.photos.findIndex((photo) => photo.id === activePhotoId),
+    0,
+  );
+  const activePhoto = property.photos[activeIndex] || getMainPhoto(property);
+
+  function stepPhoto(direction: -1 | 1) {
+    if (!property.photos.length) return;
+    const nextIndex = (activeIndex + direction + property.photos.length) % property.photos.length;
+    setActivePhotoId(property.photos[nextIndex].id);
+  }
+
   return (
     <div className="objectGallery">
       <div className="mainPhoto">
-        {mainPhoto ? <img alt={mainPhoto.name} src={mainPhoto.src} /> : <Camera size={42} />}
+        {activePhoto ? <img alt={activePhoto.name} src={activePhoto.src} /> : <Camera size={42} />}
+        {property.photos.length > 1 && (
+          <div className="galleryControls">
+            <button className="iconButton" onClick={() => stepPhoto(-1)} type="button" aria-label="Предыдущее фото">
+              <ChevronLeft size={18} />
+            </button>
+            <span>
+              {activeIndex + 1}/{property.photos.length}
+            </span>
+            <button className="iconButton" onClick={() => stepPhoto(1)} type="button" aria-label="Следующее фото">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="thumbGrid">
-        {property.photos.slice(0, 4).map((photo) => (
-          <img alt={photo.name} className={photo.id === property.mainPhotoId ? 'selectedThumb' : ''} key={photo.id} src={photo.src} />
+        {property.photos.map((photo, index) => (
+          <button
+            className={photo.id === activePhoto?.id ? 'thumbButton selectedThumb' : 'thumbButton'}
+            key={photo.id}
+            onClick={() => setActivePhotoId(photo.id)}
+            type="button"
+          >
+            <img alt={photo.name} src={photo.src} />
+            <span>{index < MAX_TELEGRAM_PHOTOS ? `#${index + 1}` : 'extra'}</span>
+          </button>
         ))}
         {property.photos.length === 0 && <span>Фото еще не загружены</span>}
       </div>
@@ -2302,6 +2852,7 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           photos: existingProperty.photos,
           mainPhotoId: existingProperty.mainPhotoId,
           videoUrl: existingProperty.videoUrl,
+          videoMeta: existingProperty.videoMeta,
         }
       : emptyProperty,
   );
@@ -2328,6 +2879,9 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       photos: [...current.photos, ...uploadedPhotos],
       mainPhotoId: current.mainPhotoId || uploadedPhotos[0]?.id || '',
     }));
+    if (form.photos.length + uploadedPhotos.length > MAX_TELEGRAM_PHOTOS) {
+      showToast('Для Telegram будет использовано первые 9 фото. Остальные останутся в карточке.', 'warning');
+    }
     event.target.value = '';
   }
 
@@ -2340,6 +2894,9 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       photos: [...current.photos, photo],
       mainPhotoId: current.mainPhotoId || photo.id,
     }));
+    if (form.photos.length + 1 > MAX_TELEGRAM_PHOTOS) {
+      showToast('Лимит Telegram album: 9 фото. Лишние фото не попадут в публикацию.', 'warning');
+    }
     setPhotoUrl('');
   }
 
@@ -2352,6 +2909,45 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         mainPhotoId: current.mainPhotoId === photoId ? photos[0]?.id || '' : current.mainPhotoId,
       };
     });
+  }
+
+  function movePhoto(photoId: string, direction: -1 | 1) {
+    setForm((current) => {
+      const index = current.photos.findIndex((photo) => photo.id === photoId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.photos.length) return current;
+      const photos = [...current.photos];
+      const [photo] = photos.splice(index, 1);
+      photos.splice(nextIndex, 0, photo);
+      return { ...current, photos };
+    });
+  }
+
+  function handleVideoFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const sizeMb = file.size / 1024 / 1024;
+    if (sizeMb > MAX_VIDEO_SIZE_MB) {
+      showToast('Видео больше 1000 MB. Для такого файла нужен backend storage.', 'warning');
+      event.target.value = '';
+      return;
+    }
+    const metadata: PropertyVideo = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type || 'video',
+      url: URL.createObjectURL(file),
+      mode: 'metadata',
+    };
+    updateField('videoMeta', metadata);
+    showToast('Видео metadata добавлено. Сам файл не сохраняется в localStorage.', 'info');
+    event.target.value = '';
+  }
+
+  function removeVideo() {
+    updateField('videoMeta', null);
+    updateField('videoUrl', '');
   }
 
   function saveProperty(event: FormEvent<HTMLFormElement>) {
@@ -2382,6 +2978,7 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       ownerTelegram: form.ownerTelegram.trim(),
       mainPhotoId: form.mainPhotoId || form.photos[0]?.id || '',
       videoUrl: form.videoUrl.trim(),
+      videoMeta: form.videoMeta,
     };
     upsertProperty(property);
     showToast(mode === 'create' ? 'Объект сохранен' : 'Изменения сохранены');
@@ -2416,15 +3013,30 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           </label>
           <label>
             Город
-            <input value={form.city} onChange={(event) => updateField('city', event.target.value)} />
+            <select value={form.city} onChange={(event) => updateField('city', event.target.value)}>
+              {cities.map((city) => (
+                <option key={city}>{city}</option>
+              ))}
+            </select>
           </label>
           <label>
-            Район
-            <input required value={form.district} onChange={(event) => updateField('district', event.target.value)} />
+            Район / локация
+            <select required value={form.district} onChange={(event) => updateField('district', event.target.value)}>
+              <option value="">Выберите район</option>
+              {districtOptions.map((districtOption) => (
+                <option key={districtOption}>{districtOption}</option>
+              ))}
+            </select>
           </label>
           <label>
             Метро
-            <input value={form.metro} onChange={(event) => updateField('metro', event.target.value)} />
+            <select value={form.metro} onChange={(event) => updateField('metro', event.target.value)}>
+              {metroOptions.map((metroOption) => (
+                <option key={metroOption || 'none'} value={metroOption}>
+                  {metroOption || 'Без метро'}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="wideField">
             Адрес
@@ -2432,7 +3044,11 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           </label>
           <label>
             Источник объекта
-            <input value={form.source} onChange={(event) => updateField('source', event.target.value)} />
+            <select value={form.source} onChange={(event) => updateField('source', event.target.value)}>
+              {sourceOptions.map((source) => (
+                <option key={source}>{source}</option>
+              ))}
+            </select>
           </label>
           <label>
             Ссылка на карту
@@ -2493,6 +3109,10 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
             <input value={form.area} onChange={(event) => updateField('area', event.target.value)} />
           </label>
           <label>
+            Цена за м²
+            <input disabled value={pricePerM2(form) ? `${pricePerM2(form)}${form.currency}` : 'Автоматически'} />
+          </label>
+          <label>
             Спальни
             <input value={form.bedrooms} onChange={(event) => updateField('bedrooms', event.target.value)} />
           </label>
@@ -2530,7 +3150,11 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           </label>
           <label>
             Отопление
-            <input value={form.heating} onChange={(event) => updateField('heating', event.target.value)} />
+            <select value={form.heating} onChange={(event) => updateField('heating', event.target.value)}>
+              {heatingOptions.map((heating) => (
+                <option key={heating}>{heating}</option>
+              ))}
+            </select>
           </label>
         </FormSection>
 
@@ -2600,10 +3224,6 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
             Telegram собственника
             <input value={form.ownerTelegram} onChange={(event) => updateField('ownerTelegram', event.target.value)} />
           </label>
-          <label>
-            Видео-ссылка
-            <input value={form.videoUrl} onChange={(event) => updateField('videoUrl', event.target.value)} />
-          </label>
           <ToggleField label="Эксклюзив" checked={form.exclusive} onChange={(value) => updateField('exclusive', value)} />
         </FormSection>
 
@@ -2611,8 +3231,11 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <div className="sectionHeader">
             <div>
               <h2>Фото объекта</h2>
-              <p>Загрузите фото с компьютера, добавьте ссылки и выберите главный кадр для карточек и Telegram.</p>
+              <p>Загрузите фото, выберите главный кадр и расставьте порядок. В Telegram album попадут первые 9 фото.</p>
             </div>
+            <span className="status status-on-advertising">
+              Telegram {Math.min(form.photos.length, MAX_TELEGRAM_PHOTOS)}/{MAX_TELEGRAM_PHOTOS}
+            </span>
           </div>
           <div className="photoTools">
             <label className="uploadBox">
@@ -2631,9 +3254,46 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <EditablePhotoGrid
             mainPhotoId={form.mainPhotoId}
             onMain={(photoId) => updateField('mainPhotoId', photoId)}
+            onMove={movePhoto}
             onRemove={removePhoto}
             photos={form.photos}
           />
+        </section>
+
+        <section className="formSection">
+          <div className="sectionHeader">
+            <div>
+              <h2>Видео объекта</h2>
+              <p>Видео можно приложить как ссылку или metadata файла. Сам файл не сохраняется в localStorage.</p>
+            </div>
+          </div>
+          <div className="photoTools">
+            <label className="uploadBox">
+              <Video size={20} />
+              Добавить видео-файл
+              <input accept="video/*" type="file" onChange={handleVideoFile} />
+            </label>
+            <label>
+              Видео-ссылка
+              <input placeholder="https://..." value={form.videoUrl} onChange={(event) => updateField('videoUrl', event.target.value)} />
+            </label>
+          </div>
+          {(form.videoMeta || form.videoUrl) && (
+            <div className="videoPanel">
+              <Video size={20} />
+              <div>
+                <strong>{form.videoMeta?.name || 'Видео по ссылке'}</strong>
+                <span>
+                  {form.videoMeta
+                    ? `${Math.round(form.videoMeta.size / 1024 / 1024)} MB · ${form.videoMeta.type || 'video'}`
+                    : form.videoUrl}
+                </span>
+              </div>
+              <button className="iconButton danger" onClick={removeVideo} type="button" aria-label="Удалить видео">
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
         </section>
 
         <FormSection title="Внутренние заметки">
@@ -2675,11 +3335,13 @@ function ToggleField({ checked, label, onChange }: { checked: boolean; label: st
 function EditablePhotoGrid({
   mainPhotoId,
   onMain,
+  onMove,
   onRemove,
   photos,
 }: {
   mainPhotoId: string;
   onMain: (photoId: string) => void;
+  onMove: (photoId: string, direction: -1 | 1) => void;
   onRemove: (photoId: string) => void;
   photos: PropertyPhoto[];
 }) {
@@ -2688,12 +3350,33 @@ function EditablePhotoGrid({
   }
   return (
     <div className="editablePhotos">
-      {photos.map((photo) => (
+      {photos.map((photo, index) => (
         <article className={photo.id === mainPhotoId ? 'editablePhoto mainSelected' : 'editablePhoto'} key={photo.id}>
-          <img alt={photo.name} src={photo.src} />
-          <div>
+          <div className="editablePhotoImage">
+            <img alt={photo.name} src={photo.src} />
+            <span className="photoBadge">{index < MAX_TELEGRAM_PHOTOS ? `Telegram #${index + 1}` : 'В карточке'}</span>
+          </div>
+          <div className="editablePhotoActions">
             <button className="secondaryButton" onClick={() => onMain(photo.id)} type="button">
               {photo.id === mainPhotoId ? 'Главное фото' : 'Сделать главным'}
+            </button>
+            <button
+              aria-label="Переместить фото влево"
+              className="iconButton"
+              disabled={index === 0}
+              onClick={() => onMove(photo.id, -1)}
+              type="button"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              aria-label="Переместить фото вправо"
+              className="iconButton"
+              disabled={index === photos.length - 1}
+              onClick={() => onMove(photo.id, 1)}
+              type="button"
+            >
+              <ChevronRight size={16} />
             </button>
             <button className="iconButton danger" onClick={() => onRemove(photo.id)} type="button">
               <Trash2 size={16} />
@@ -2759,7 +3442,7 @@ function PostPreviewPage() {
       channel,
       status,
       text: postText,
-      photosCount: selectedProperty.photos.length,
+      photosCount: telegramPhotoCount(selectedProperty),
       error,
       messageLink,
     });
@@ -2795,7 +3478,7 @@ function PostPreviewPage() {
         body: JSON.stringify({
           objectId: selectedProperty.id,
           text: postText,
-          photos: selectedProperty.photos.map((photo) => photo.src),
+          photos: selectedProperty.photos.slice(0, MAX_TELEGRAM_PHOTOS).map((photo) => photo.src),
         }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -2836,7 +3519,7 @@ function PostPreviewPage() {
           <div className="sectionHeader">
             <div>
               <h2>Генератор Telegram-поста</h2>
-              <p>Выберите объект, язык и шаблон. Фото и текст подготовлены для Demo Mode.</p>
+              <p>Выберите объект, язык и шаблон. Telegram album использует первые 9 фото в порядке карточки.</p>
             </div>
           </div>
           <div className="filtersPanel previewFilters">
@@ -2897,7 +3580,11 @@ function PostPreviewPage() {
                 </button>
                 <button className="secondaryButton dangerText" onClick={publishTelegram} type="button">
                   <MessageCircle size={18} />
-                  {publishingMode === 'Production' ? 'Production publish' : publishingMode === 'Test' ? 'Test publish' : 'Demo publish'}
+                  {publishingMode === 'Production'
+                    ? 'Опубликовать в основной канал'
+                    : publishingMode === 'Test'
+                      ? 'Опубликовать в тестовый канал'
+                      : 'Demo: записать в историю'}
                 </button>
               </div>
             </>
@@ -2912,7 +3599,7 @@ function PostPreviewPage() {
         confirmLabel="Опубликовать"
         isOpen={confirmProductionOpen}
         title="Production публикация?"
-        text="Пост будет отправлен в production-канал Rent in Tbilisi, если backend endpoint подключен."
+        text="Вы точно хотите опубликовать в основной канал Rent in Tbilisi?"
         onCancel={() => setConfirmProductionOpen(false)}
         onConfirm={() => {
           setConfirmProductionOpen(false);
@@ -3095,7 +3782,7 @@ function AgentCard({ agent }: { agent: Agent }) {
 }
 
 function AgentDetailPage() {
-  const { agents } = useCrm();
+  const { agents, deals, properties, publications } = useCrm();
   const { agentId } = useParams();
   const agent = agents.find((item) => item.id === agentId);
   if (!agent) {
@@ -3105,8 +3792,39 @@ function AgentDetailPage() {
       </PageFrame>
     );
   }
+  const agentProperties = properties.filter((property) => property.agent === agent.name);
+  const agentDeals = deals.filter((deal) => deal.agent === agent.name);
+  const agentPublications = publications.filter((publication) => publication.author === agent.name);
+  const commissionSum = agentDeals.reduce((sum, deal) => sum + safeNumber(deal.commission), 0);
+  const activeObjects = agentProperties.filter((property) => !['Rented', 'Sold', 'Archived'].includes(property.status));
   return (
     <PageFrame>
+      <section className="metrics compactMetrics">
+        <article>
+          <span>Объекты</span>
+          <strong>{agentProperties.length}</strong>
+        </article>
+        <article>
+          <span>Активные</span>
+          <strong>{activeObjects.length}</strong>
+        </article>
+        <article>
+          <span>Сделки</span>
+          <strong>{agentDeals.length}</strong>
+        </article>
+        <article>
+          <span>Комиссия</span>
+          <strong>{commissionSum}$</strong>
+        </article>
+        <article>
+          <span>Эксклюзивы</span>
+          <strong>{agentProperties.filter((property) => property.exclusive).length}</strong>
+        </article>
+        <article>
+          <span>Публикации</span>
+          <strong>{agentPublications.length}</strong>
+        </article>
+      </section>
       <section className="detailLayout">
         <div className="workspace">
           <Link className="backLink" to="/agents">
@@ -3131,6 +3849,24 @@ function AgentDetailPage() {
             <InfoItem label="Количество эксклюзивов" value={String(agent.exclusiveCount)} />
             <InfoItem label="Процент комиссии" value={`${agent.commissionPercent}%`} />
           </div>
+          <div className="sectionHeader nestedHeader">
+            <div>
+              <h2>Объекты агента</h2>
+              <p>Активные карточки, архив и реализованные объекты агента.</p>
+            </div>
+          </div>
+          <div className="compactList">
+            {agentProperties.length === 0 ? (
+              <span>Объектов пока нет</span>
+            ) : (
+              agentProperties.map((property) => (
+                <Link key={property.id} to={`/properties/${property.id}`}>
+                  <strong>{property.titleRu || property.address}</strong>
+                  <span>{property.district} · {formatPrice(property)} · {property.status}</span>
+                </Link>
+              ))
+            )}
+          </div>
         </div>
         <aside className="workspace compact">
           <h2>Роли команды</h2>
@@ -3138,6 +3874,23 @@ function AgentDetailPage() {
             {teamRoles.map((role) => (
               <span key={role}>{role}</span>
             ))}
+          </div>
+          <div className="sectionHeader nestedHeader">
+            <div>
+              <h2>Сделки и комиссия</h2>
+            </div>
+          </div>
+          <div className="compactList">
+            {agentDeals.length === 0 ? (
+              <span>Сделок пока нет</span>
+            ) : (
+              agentDeals.map((deal) => (
+                <Link key={deal.id} to="/deals">
+                  <strong>{deal.propertyId} · {deal.amount}</strong>
+                  <span>{deal.commission} · {deal.status}</span>
+                </Link>
+              ))
+            )}
           </div>
         </aside>
       </section>
@@ -3286,10 +4039,63 @@ function AnalyticsPage() {
 
 function DistrictsPage() {
   const { properties } = useCrm();
+  const [mode, setMode] = useState<DealType>('Rent');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
   const rows = districtAnalytics(properties);
+  const selectedObjects = properties.filter(
+    (property) =>
+      property.dealType === mode &&
+      (selectedDistrict ? property.district === selectedDistrict : true) &&
+      !['Archived'].includes(property.status),
+  );
+  const visibleRows = rows.filter((row) => (mode === 'Rent' ? row.rentCount > 0 : row.saleCount > 0));
 
   return (
-    <PageFrame>
+    <PageFrame
+      actions={
+        <div className="quickActions">
+          <button className={mode === 'Rent' ? 'primaryButton' : 'secondaryButton'} onClick={() => setMode('Rent')} type="button">
+            Rent
+          </button>
+          <button className={mode === 'Sale' ? 'primaryButton' : 'secondaryButton'} onClick={() => setMode('Sale')} type="button">
+            Sale
+          </button>
+        </div>
+      }
+    >
+      <section className="districtCards">
+        {visibleRows.map((row) => {
+          const isRent = mode === 'Rent';
+          const count = isRent ? row.rentCount : row.saleCount;
+          const avg = isRent ? row.avgRent : row.avgSale;
+          const avgM2 = isRent ? row.avgRentM2 : row.avgSaleM2;
+          return (
+            <button
+              className={selectedDistrict === row.district ? 'districtCard selectedDistrictCard' : 'districtCard'}
+              key={row.district}
+              onClick={() => setSelectedDistrict(selectedDistrict === row.district ? '' : row.district)}
+              type="button"
+            >
+              <span>{row.district}</span>
+              <strong>{avg ? `${avg}$` : '-'}</strong>
+              <small>
+                {count} объектов · {avgM2 ? `${avgM2}$/м²` : '-/м²'}
+              </small>
+            </button>
+          );
+        })}
+      </section>
+
+      <section className="workspace">
+        <div className="sectionHeader">
+          <div>
+            <h2>{selectedDistrict || 'Все районы'} · {mode}</h2>
+            <p>Рабочий список объектов для сравнения цены за м² по району.</p>
+          </div>
+        </div>
+        <PropertyCardGrid properties={selectedObjects.slice(0, 6)} />
+      </section>
+
       <section className="workspace">
         <div className="sectionHeader">
           <div>
@@ -3439,6 +4245,155 @@ function EntityTable({ columns, rows, title }: { columns: string[]; rows: string
             </table>
           </div>
         )}
+      </section>
+    </PageFrame>
+  );
+}
+
+function ImportPage() {
+  const { showToast, upsertProperty } = useCrm();
+  const navigate = useNavigate();
+  const [telegramText, setTelegramText] = useState(`#Saburtalo 🚇 #MCUniversity
+📍14b Shalva Nutsubidze Street
+
+❗️#Exclusive
+
+🏢 #2Bed #Apartment for #Rent
+✨ #NewBuilding | #White
+🏠105 sq.m | 5/12 Floor |
+#CentralHeating | #Shower
+
+✅ #Balcony ✅ #WiFi ✅ #TV
+✅ #Stove ✅ #VacuumCleaner
+✅ #Elevator ✅ #Oven
+✅ #ParkingPlace
+✅ #Conditioner
+
+👫Tenants: 1-4
+🐕Pets: #ByAgreement
+
+💰1000$ + Deposit 1000$
+0% Commission
+#Price900to1200
+
+➡️🏢 @David_Tibelashvili |
++995 599 20 67 16 #Sergi
+
+📍APARTMENTS ON MAP📍`);
+  const [csvText, setCsvText] = useState(
+    'address,district,metro,deal_type,price,area,bedrooms,floor,total_floors,status,agent,owner,phone,telegram,photo_url\n14b Shalva Nutsubidze Street,Saburtalo,MCUniversity,Rent,1000,105,2,5,12,On Advertising,David Tibelashvili,Owner,+995 599 20 67 16,@owner,',
+  );
+  const parsedTelegram = useMemo(() => parseTelegramPostToProperty(telegramText), [telegramText]);
+  const csvProperties = useMemo(() => parseCsvProperties(csvText), [csvText]);
+
+  function createPropertyFromDraft(draft: PropertyFormState, source: string) {
+    if (!draft.address.trim()) {
+      showToast('Нужен адрес объекта перед импортом', 'warning');
+      return null;
+    }
+    const now = new Date().toISOString();
+    const property = normalizeProperty(
+      {
+        ...draft,
+        id: `RIT-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 90 + 10)}`,
+        createdAt: now,
+        updatedAt: now,
+        source,
+        titleRu: draft.titleRu || `${draft.category} ${draft.dealType === 'Sale' ? 'на продажу' : 'в аренду'} в ${draft.district}`,
+        titleEn: draft.titleEn || `${draft.bedrooms || ''} bedroom ${draft.category.toLowerCase()} in ${draft.district}`.trim(),
+      },
+      Date.now(),
+    );
+    upsertProperty(property);
+    return property;
+  }
+
+  function importTelegram() {
+    const property = createPropertyFromDraft(parsedTelegram, 'Telegram');
+    if (!property) return;
+    showToast('Объект создан из Telegram-поста');
+    navigate(`/properties/${property.id}`);
+  }
+
+  function importCsv() {
+    const imported = csvProperties
+      .map((draft) => createPropertyFromDraft(draft, 'Google Sheets'))
+      .filter(Boolean) as Property[];
+    if (!imported.length) return;
+    showToast(`Импортировано объектов: ${imported.length}`);
+    navigate('/properties');
+  }
+
+  return (
+    <PageFrame>
+      <section className="importGrid">
+        <div className="workspace">
+          <div className="sectionHeader">
+            <div>
+              <h2>Telegram post import</h2>
+              <p>Вставьте пост Rent in Tbilisi. CRM распознает только whitelisted хэштеги и структуру объявления.</p>
+            </div>
+            <button className="primaryButton" onClick={importTelegram} type="button">
+              <Plus size={18} />
+              Создать объект
+            </button>
+          </div>
+          <textarea rows={18} value={telegramText} onChange={(event) => setTelegramText(event.target.value)} />
+        </div>
+
+        <div className="workspace">
+          <div className="sectionHeader">
+            <div>
+              <h2>Preview объекта</h2>
+              <p>Проверьте данные перед созданием карточки.</p>
+            </div>
+          </div>
+          <div className="previewBox">
+            <InfoItem label="Адрес" value={parsedTelegram.address || '-'} />
+            <InfoItem label="Район / метро" value={`${parsedTelegram.district || '-'} / ${parsedTelegram.metro || '-'}`} />
+            <InfoItem label="Тип" value={`${parsedTelegram.category} · ${parsedTelegram.dealType}`} />
+            <InfoItem label="Цена" value={parsedTelegram.price ? `${parsedTelegram.price}${parsedTelegram.currency}` : '-'} />
+            <InfoItem label="Площадь / м²" value={parsedTelegram.area ? `${parsedTelegram.area} м² · ${pricePerM2(parsedTelegram) || '-'}$/м²` : '-'} />
+            <InfoItem label="Этаж" value={`${parsedTelegram.floor || '-'}/${parsedTelegram.totalFloors || '-'}`} />
+            <InfoItem label="Exclusive" value={parsedTelegram.exclusive ? 'Да' : 'Нет'} />
+            <InfoItem label="Amenities" value={extractHashtags(buildTelegramPost(normalizeProperty({ ...parsedTelegram, id: 'preview' }, 0), defaultBrandSettings, 'EN'))} />
+          </div>
+        </div>
+      </section>
+
+      <section className="workspace">
+        <div className="sectionHeader">
+          <div>
+            <h2>CSV import</h2>
+            <p>Поддерживаются базовые колонки: address, district, metro, deal_type, price, area, bedrooms, floor, total_floors, status, agent, owner, phone, telegram, photo_url.</p>
+          </div>
+          <button className="primaryButton" onClick={importCsv} type="button">
+            <Upload size={18} />
+            Импортировать CSV
+          </button>
+        </div>
+        <textarea rows={8} value={csvText} onChange={(event) => setCsvText(event.target.value)} />
+        <div className="compactList importPreviewList">
+          {csvProperties.length === 0 ? (
+            <span>CSV preview пуст</span>
+          ) : (
+            csvProperties.slice(0, 8).map((property, index) => (
+              <span key={`${property.address}-${index}`}>
+                <strong>{property.address || 'Без адреса'}</strong>
+                <span>{property.district} · {property.dealType} · {property.price || '-'}{property.currency}</span>
+              </span>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="workspace">
+        <div className="settingsNotice">
+          <ShieldCheck size={18} />
+          <span>
+            Frontend не может читать старую историю канала Telegram или личные сообщения. Google Sheets credentials и Telegram Bot Token должны быть только на backend.
+          </span>
+        </div>
       </section>
     </PageFrame>
   );

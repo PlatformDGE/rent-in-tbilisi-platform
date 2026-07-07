@@ -120,17 +120,38 @@ p {
   gap: 12px;
 }
 
-.logoMark {
+.logo .logoMark {
   align-items: center;
   background: var(--green-dark);
-  border-radius: 8px;
+  border-radius: 999px;
   color: #ffffff;
-  display: inline-flex;
-  font-size: 20px;
+  display: grid;
+  flex: 0 0 auto;
+  font-size: 8px;
   font-weight: 900;
   height: 46px;
   justify-content: center;
+  line-height: 1;
+  place-items: center;
   width: 46px;
+}
+
+.logo .logoMark span {
+  color: #ffffff;
+  display: block;
+  font-size: 7px;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.logo .logoMark i {
+  background:
+    linear-gradient(90deg, transparent 40%, #e32227 40% 60%, transparent 60%),
+    linear-gradient(180deg, transparent 40%, #e32227 40% 60%, transparent 60%),
+    #ffffff;
+  display: block;
+  height: 12px;
+  width: 16px;
 }
 
 .logo strong,
@@ -381,6 +402,7 @@ p {
 .heroPanel,
 .workspace,
 .metrics article,
+.metricButton,
 .propertyCard,
 .agentCard,
 .phoneShell {
@@ -418,13 +440,25 @@ p {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.metrics article {
+.metrics article,
+.metricButton {
   box-shadow: none;
   min-height: 98px;
   padding: 16px;
 }
 
-.metrics span {
+.metricButton {
+  cursor: pointer;
+  text-align: left;
+}
+
+.metricButton:hover {
+  border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+  transform: translateY(-1px);
+}
+
+.metrics span,
+.metricButton span {
   align-items: center;
   color: var(--muted);
   display: flex;
@@ -434,8 +468,50 @@ p {
   margin-bottom: 10px;
 }
 
-.metrics strong {
+.metrics strong,
+.metricButton strong {
   font-size: 27px;
+}
+
+.dashboardDrawer {
+  max-height: min(720px, calc(100vh - 40px));
+  max-width: 560px;
+  overflow: auto;
+}
+
+.drawerList,
+.compactList {
+  display: grid;
+  gap: 8px;
+}
+
+.drawerList a,
+.compactList a,
+.compactList > span {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+}
+
+.drawerList a:hover,
+.compactList a:hover {
+  border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+}
+
+.drawerList strong,
+.compactList strong {
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.drawerList span,
+.compactList span span,
+.compactList > span {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .workspace {
@@ -877,10 +953,12 @@ td span {
   color: var(--green);
   display: flex;
   justify-content: center;
+  position: relative;
 }
 
 .mainPhoto img,
-.thumbGrid img {
+.thumbGrid img,
+.thumbButton img {
   height: 100%;
   object-fit: cover;
   width: 100%;
@@ -893,13 +971,57 @@ td span {
   padding: 8px;
 }
 
-.thumbGrid img {
+.thumbButton {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  display: grid;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+}
+
+.thumbButton img {
   aspect-ratio: 1 / 1;
   border-radius: 8px;
 }
 
+.thumbButton span,
+.photoBadge {
+  background: rgba(6, 43, 85, 0.86);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 850;
+  left: 8px;
+  padding: 4px 7px;
+  position: absolute;
+  top: 8px;
+}
+
 .selectedThumb {
   outline: 3px solid var(--accent);
+}
+
+.galleryControls {
+  align-items: center;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  bottom: 12px;
+  display: inline-flex;
+  gap: 8px;
+  left: 50%;
+  padding: 6px;
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.galleryControls span {
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .photoTools {
@@ -953,17 +1075,114 @@ td span {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
+.editablePhotoImage {
+  position: relative;
+}
+
 .editablePhoto img {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   width: 100%;
 }
 
-.editablePhoto div {
+.editablePhotoActions {
   display: flex;
   gap: 8px;
   justify-content: space-between;
   padding: 8px;
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.videoPanel {
+  align-items: center;
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.videoPanel div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.videoPanel span {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.videoPanel .iconButton {
+  margin-left: auto;
+}
+
+.nestedHeader {
+  margin: 24px 0 12px;
+}
+
+.districtCards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.districtCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--fg);
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  padding: 15px;
+  text-align: left;
+}
+
+.districtCard:hover,
+.selectedDistrictCard {
+  border-color: color-mix(in srgb, var(--green) 50%, var(--border));
+}
+
+.districtCard span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.districtCard strong {
+  color: var(--green-dark);
+  font-size: 26px;
+}
+
+.districtCard small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.importGrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 420px;
+}
+
+.previewBox {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.importPreviewList {
+  margin-top: 14px;
 }
 
 .previewLayout {
@@ -1271,12 +1490,14 @@ td span {
   }
 
   .propertyCards,
-  .agentGrid {
+  .agentGrid,
+  .districtCards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .previewLayout,
-  .detailLayout {
+  .detailLayout,
+  .importGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1322,7 +1543,8 @@ td span {
   .formGrid,
   .photoTools,
   .editablePhotos,
-  .objectGallery {
+  .objectGallery,
+  .previewBox {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1359,12 +1581,14 @@ td span {
   .compactMetrics,
   .propertyCards,
   .agentGrid,
+  .districtCards,
   .filtersPanel,
   .previewFilters,
   .formGrid,
   .photoTools,
   .editablePhotos,
   .objectGallery,
+  .previewBox,
   .thumbGrid,
   .detailGrid,
   .telegramModes,

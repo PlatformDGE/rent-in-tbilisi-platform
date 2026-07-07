@@ -1,8 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
 type PublishPayload = {
+  fileName?: string;
   objectId?: string;
   photos?: string[];
+  size?: number;
   text?: string;
 };
 
@@ -25,13 +27,37 @@ function readJsonBody(request: IncomingMessage) {
 }
 
 function sendJson(response: ServerResponse, status: number, data: unknown) {
-  response.writeHead(status, { 'Content-Type': 'application/json' });
+  response.writeHead(status, {
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  });
   response.end(JSON.stringify(data));
 }
 
 const server = createServer(async (request, response) => {
+  if (request.method === 'OPTIONS') {
+    sendJson(response, 204, {});
+    return;
+  }
+
   if (request.method !== 'POST') {
     sendJson(response, 404, { message: 'Not found' });
+    return;
+  }
+
+  if (request.url === '/api/media/upload') {
+    try {
+      const body = await readJsonBody(request);
+      sendJson(response, 501, {
+        message: 'Media storage backend is not connected',
+        fileName: body.fileName || 'unknown',
+        size: body.size || 0,
+      });
+    } catch (error) {
+      sendJson(response, 400, { message: error instanceof Error ? error.message : 'Bad request' });
+    }
     return;
   }
 
