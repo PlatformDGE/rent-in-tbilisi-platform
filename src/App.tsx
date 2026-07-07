@@ -43,10 +43,10 @@ import {
   useParams,
 } from 'react-router-dom';
 
-type DealType = 'Аренда' | 'Продажа';
-type Category = 'Квартира' | 'Дом' | 'Коммерция' | 'Земля' | 'Отель' | 'Офис';
-type PropertyStatus = 'Новый' | 'В работе' | 'На рекламе' | 'Сдан' | 'Продан' | 'Архив';
-type PetPolicy = 'Да' | 'Нет' | 'Обсуждается';
+type DealType = 'Rent' | 'Sale' | 'Daily Rent';
+type Category = 'Apartment' | 'House' | 'Commercial' | 'Land' | 'Office' | 'Hotel';
+type PropertyStatus = 'New' | 'In Progress' | 'On Advertising' | 'Reserved' | 'Rented' | 'Sold' | 'Archived';
+type PetPolicy = 'Allowed' | 'NotAllowed' | 'ByAgreement';
 type Currency = '$' | '₾' | '€';
 type TeamRole =
   | 'Рекрут 20%'
@@ -58,8 +58,10 @@ type TeamRole =
   | 'Администратор';
 type AuthRole = 'Администратор' | 'Оператор' | 'Агент';
 type ThemeMode = 'light' | 'dark';
-type PublicationStatus = 'черновик' | 'скопировано' | 'опубликовано' | 'ошибка';
+type PublicationStatus = 'Draft' | 'Copied' | 'Test Published' | 'Production Published' | 'Error';
 type PostLanguage = 'EN' | 'RU';
+type BuildingType = 'NewBuilding' | 'OldBuilding' | 'HistoricalBuilding' | 'Reconstruction';
+type RenovationType = 'New' | 'White' | 'Grey' | 'Yellow' | 'Mixed' | 'Old' | 'Retro' | 'UnderRepair';
 
 type PropertyPhoto = {
   id: string;
@@ -72,10 +74,14 @@ type Property = {
   id: string;
   dealType: DealType;
   category: Category;
+  city: string;
   district: string;
   metro: string;
   address: string;
+  mapLink: string;
+  cadastralCode: string;
   building: string;
+  source: string;
   titleRu: string;
   titleEn: string;
   descriptionRu: string;
@@ -87,6 +93,9 @@ type Property = {
   rooms: string;
   floor: string;
   totalFloors: string;
+  tenantsCount: string;
+  buildingType: BuildingType;
+  renovation: RenovationType;
   heating: string;
   airConditioner: boolean;
   balcony: boolean;
@@ -95,6 +104,9 @@ type Property = {
   dishwasher: boolean;
   oven: boolean;
   stove: boolean;
+  tv: boolean;
+  vacuumCleaner: boolean;
+  shower: boolean;
   fridge: boolean;
   washingMachine: boolean;
   internet: boolean;
@@ -103,8 +115,10 @@ type Property = {
   deposit: string;
   clientCommission: '0%';
   ownerCommission: string;
+  taxIncluded: boolean;
   agent: string;
   operator: string;
+  publicationContact: string;
   owner: string;
   ownerPhone: string;
   ownerTelegram: string;
@@ -113,6 +127,7 @@ type Property = {
   internalNotes: string;
   photos: PropertyPhoto[];
   mainPhotoId: string;
+  videoUrl: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -174,17 +189,29 @@ type Publication = {
   propertyId: string;
   propertyTitle: string;
   date: string;
-  channel: string;
+  author: string;
+  channel: 'Demo' | 'Test' | 'Production';
   status: PublicationStatus;
   text: string;
+  photosCount: number;
+  error?: string;
+  messageLink?: string;
 };
 
 type BrandSettings = {
-  telegramBotToken: string;
-  telegramChannelId: string;
+  brandName: string;
+  telegramUsername: string;
+  testChannelId: string;
+  productionChannelId: string;
+  publishingMode: 'Demo' | 'Test' | 'Production';
+  defaultLanguage: PostLanguage;
+  defaultCurrency: Currency;
+  includeMapBlock: boolean;
+  includeReviewsBlock: boolean;
+  includeZeroCommission: boolean;
   mainContact: string;
   phone: string;
-  agentSignature: string;
+  defaultSignature: string;
   operatorSignature: string;
 };
 
@@ -228,11 +255,13 @@ const SETTINGS_STORAGE_KEY = 'molecula-crm-brand-settings';
 const SESSION_STORAGE_KEY = 'molecula-crm-session';
 const THEME_STORAGE_KEY = 'molecula-crm-theme';
 
-const dealTypes: DealType[] = ['Аренда', 'Продажа'];
-const categories: Category[] = ['Квартира', 'Дом', 'Коммерция', 'Земля', 'Отель', 'Офис'];
-const propertyStatuses: PropertyStatus[] = ['Новый', 'В работе', 'На рекламе', 'Сдан', 'Продан', 'Архив'];
-const petPolicies: PetPolicy[] = ['Да', 'Нет', 'Обсуждается'];
+const dealTypes: DealType[] = ['Rent', 'Sale', 'Daily Rent'];
+const categories: Category[] = ['Apartment', 'House', 'Commercial', 'Land', 'Office', 'Hotel'];
+const propertyStatuses: PropertyStatus[] = ['New', 'In Progress', 'On Advertising', 'Reserved', 'Rented', 'Sold', 'Archived'];
+const petPolicies: PetPolicy[] = ['Allowed', 'NotAllowed', 'ByAgreement'];
 const currencies: Currency[] = ['$', '₾', '€'];
+const buildingTypes: BuildingType[] = ['NewBuilding', 'OldBuilding', 'HistoricalBuilding', 'Reconstruction'];
+const renovationTypes: RenovationType[] = ['New', 'White', 'Grey', 'Yellow', 'Mixed', 'Old', 'Retro', 'UnderRepair'];
 const authRoles: AuthRole[] = ['Администратор', 'Оператор', 'Агент'];
 const teamRoles: TeamRole[] = [
   'Рекрут 20%',
@@ -266,21 +295,33 @@ const fallbackPhotos: PropertyPhoto[] = [
 ];
 
 const defaultBrandSettings: BrandSettings = {
-  telegramBotToken: '',
-  telegramChannelId: '@rentintbilisi',
+  brandName: 'Rent in Tbilisi',
+  telegramUsername: '@David_Tibelashvili',
+  testChannelId: '@rentintbilisi_test',
+  productionChannelId: '@rentintbilisi',
+  publishingMode: 'Demo',
+  defaultLanguage: 'EN',
+  defaultCurrency: '$',
+  includeMapBlock: true,
+  includeReviewsBlock: false,
+  includeZeroCommission: true,
   mainContact: '@David_Tibelashvili',
   phone: '+995 599 20 67 16',
-  agentSignature: '#Mari',
+  defaultSignature: '#Sergi',
   operatorSignature: 'Molecula Operator',
 };
 
 const emptyProperty: PropertyFormState = {
-  dealType: 'Аренда',
-  category: 'Квартира',
+  dealType: 'Rent',
+  category: 'Apartment',
+  city: 'Tbilisi',
   district: '',
   metro: '',
   address: '',
+  mapLink: '',
+  cadastralCode: '',
   building: '',
+  source: 'Owner',
   titleRu: '',
   titleEn: '',
   descriptionRu: '',
@@ -292,7 +333,10 @@ const emptyProperty: PropertyFormState = {
   rooms: '',
   floor: '',
   totalFloors: '',
-  heating: 'Central Heating',
+  tenantsCount: '1-4',
+  buildingType: 'NewBuilding',
+  renovation: 'White',
+  heating: 'CentralHeating',
   airConditioner: false,
   balcony: false,
   elevator: false,
@@ -300,36 +344,46 @@ const emptyProperty: PropertyFormState = {
   dishwasher: false,
   oven: false,
   stove: true,
+  tv: true,
+  vacuumCleaner: true,
+  shower: true,
   fridge: true,
   washingMachine: true,
   internet: true,
-  petPolicy: 'Обсуждается',
-  rentalTerm: '12 месяцев',
-  deposit: '1 месяц',
+  petPolicy: 'ByAgreement',
+  rentalTerm: '12Month',
+  deposit: '',
   clientCommission: '0%',
   ownerCommission: '50%',
+  taxIncluded: false,
   agent: 'David Tibelashvili',
   operator: 'Mari',
+  publicationContact: '@David_Tibelashvili',
   owner: '',
   ownerPhone: '',
   ownerTelegram: '',
-  status: 'Новый',
+  status: 'New',
   exclusive: false,
   internalNotes: '',
   photos: [],
   mainPhotoId: '',
+  videoUrl: '',
 };
 
 const starterProperties: Property[] = [
   {
     ...emptyProperty,
     id: 'RIT-1001',
-    dealType: 'Аренда',
-    category: 'Квартира',
+    dealType: 'Rent',
+    category: 'Apartment',
+    city: 'Tbilisi',
     district: 'Vake',
     metro: 'Rustaveli',
     address: 'Ilia Chavchavadze Ave 37',
+    mapLink: 'https://maps.google.com/',
+    cadastralCode: '',
     building: 'Axis Towers area',
+    source: 'Owner',
     titleRu: 'Светлая квартира в Vake',
     titleEn: 'Beautiful apartment for rent in Vake',
     descriptionRu: 'Светлая квартира рядом с парком, готова к показам.',
@@ -341,34 +395,49 @@ const starterProperties: Property[] = [
     rooms: '3',
     floor: '8',
     totalFloors: '12',
+    tenantsCount: '1-4',
+    buildingType: 'NewBuilding',
+    renovation: 'White',
+    heating: 'CentralHeating',
     balcony: true,
     elevator: true,
     dishwasher: true,
     oven: true,
     stove: true,
+    tv: true,
+    vacuumCleaner: true,
+    shower: true,
     fridge: true,
     washingMachine: true,
     internet: true,
+    deposit: '1200',
+    taxIncluded: false,
     owner: 'Giorgi Maisuradze',
     ownerPhone: '+995 599 10 20 30',
     ownerTelegram: '@giorgi_owner',
-    status: 'На рекламе',
+    publicationContact: '@David_Tibelashvili',
+    status: 'On Advertising',
     exclusive: true,
     internalNotes: 'Показы после 18:00. Ключи у консьержа.',
     photos: fallbackPhotos,
     mainPhotoId: fallbackPhotos[0].id,
+    videoUrl: '',
     createdAt: '2026-07-01T10:00:00.000Z',
     updatedAt: '2026-07-01T10:00:00.000Z',
   },
   {
     ...emptyProperty,
     id: 'RIT-1002',
-    dealType: 'Продажа',
-    category: 'Квартира',
+    dealType: 'Sale',
+    category: 'Apartment',
+    city: 'Tbilisi',
     district: 'Sololaki',
     metro: 'Liberty Square',
     address: 'Atoneli St 12',
+    mapLink: 'https://maps.google.com/',
+    cadastralCode: '',
     building: 'Old Tbilisi residence',
+    source: 'Owner',
     titleRu: 'Квартира в историческом доме',
     titleEn: 'Apartment for sale in historic Sololaki',
     descriptionRu: 'Исторический дом, высокий потолок, чистые документы.',
@@ -380,15 +449,24 @@ const starterProperties: Property[] = [
     rooms: '4',
     floor: '3',
     totalFloors: '5',
+    tenantsCount: '',
+    buildingType: 'HistoricalBuilding',
+    renovation: 'Mixed',
+    heating: 'CentralHeating',
     balcony: true,
     oven: true,
     stove: true,
+    tv: true,
+    vacuumCleaner: true,
+    shower: true,
     fridge: true,
     internet: true,
+    taxIncluded: true,
     owner: 'Mariam Janelidze',
     ownerPhone: '+995 577 44 55 66',
     ownerTelegram: '@mariam_owner',
-    status: 'Продан',
+    publicationContact: '@David_Tibelashvili',
+    status: 'Sold',
     exclusive: false,
     internalNotes: 'Сделка закрыта, документы в архиве.',
     photos: [
@@ -400,17 +478,22 @@ const starterProperties: Property[] = [
       },
     ],
     mainPhotoId: 'url-sololaki-main',
+    videoUrl: '',
     createdAt: '2026-06-28T12:20:00.000Z',
     updatedAt: '2026-06-28T12:20:00.000Z',
   },
   {
     ...emptyProperty,
     id: 'RIT-1003',
-    dealType: 'Аренда',
-    category: 'Квартира',
+    dealType: 'Rent',
+    category: 'Apartment',
+    city: 'Tbilisi',
     district: 'Saburtalo',
     metro: 'Medical University',
     address: 'Bakhtrioni St 22',
+    mapLink: 'https://maps.google.com/',
+    cadastralCode: '',
+    source: 'Owner',
     titleRu: 'Уютная квартира у метро',
     titleEn: 'Cozy apartment near metro',
     descriptionRu: 'Подходит для пары или одного человека, можно с маленьким питомцем.',
@@ -422,18 +505,28 @@ const starterProperties: Property[] = [
     rooms: '2',
     floor: '6',
     totalFloors: '10',
+    tenantsCount: '1-2',
+    buildingType: 'NewBuilding',
+    renovation: 'Grey',
+    heating: 'CentralHeating',
     balcony: true,
     elevator: true,
     oven: true,
     stove: true,
+    tv: true,
+    vacuumCleaner: true,
+    shower: true,
     fridge: true,
     washingMachine: true,
     internet: true,
-    petPolicy: 'Обсуждается',
+    petPolicy: 'ByAgreement',
+    deposit: '850',
+    taxIncluded: false,
     owner: 'Irakli Nadiradze',
     ownerPhone: '+995 555 77 88 90',
     ownerTelegram: '@irakli_owner',
-    status: 'В работе',
+    publicationContact: '@David_Tibelashvili',
+    status: 'In Progress',
     exclusive: true,
     internalNotes: 'Нужен новый фотоотчет перед публикацией.',
     photos: [
@@ -445,10 +538,81 @@ const starterProperties: Property[] = [
       },
     ],
     mainPhotoId: 'url-saburtalo-main',
+    videoUrl: '',
     createdAt: '2026-06-20T09:10:00.000Z',
     updatedAt: '2026-06-20T09:10:00.000Z',
   },
 ];
+
+const extraSeedProperties: Property[] = [
+  ['RIT-1004', 'Rent', 'Vera', 'Rustaveli', '25 Barnovi Street', '980', '58', '1', '4', '9', 'Rented', 'Nino Beridze'],
+  ['RIT-1005', 'Rent', 'Saburtalo', 'MCUniversity', '14b Shalva Nutsubidze Street', '1000', '105', '2', '5', '12', 'On Advertising', 'David Tibelashvili'],
+  ['RIT-1006', 'Sale', 'Vake', 'Delisi', 'Mtskheta Street 18', '245000', '118', '3', '6', '14', 'On Advertising', 'Ana Lomidze'],
+  ['RIT-1007', 'Rent', 'Didi Digomi', 'Didube', 'Mirian Mepe Avenue 41', '650', '72', '2', '3', '8', 'In Progress', 'Nino Beridze'],
+  ['RIT-1008', 'Sale', 'Krtsanisi', '300 Aragveli', 'Krtsanisi Residence', '320000', '140', '3', '9', '12', 'Sold', 'David Tibelashvili'],
+  ['RIT-1009', 'Rent', 'Varketili', 'Varketili', 'Javakheti Street 7', '480', '46', '1', '2', '9', 'Archived', 'Mari Operator'],
+  ['RIT-1010', 'Daily Rent', 'Old Tbilisi', 'AvlabariMetro', 'Metekhi Rise 4', '95', '38', '1', '2', '4', 'New', 'Ana Lomidze'],
+].map(([id, dealType, district, metro, address, price, area, bedrooms, floor, totalFloors, status, agent], index) => {
+  const photo = {
+    id: `${id}-photo`,
+    name: `${district} apartment`,
+    src: fallbackPhotos[index % fallbackPhotos.length].src,
+    type: 'url' as const,
+  };
+  return {
+    ...emptyProperty,
+    id,
+    dealType: dealType as DealType,
+    category: 'Apartment',
+    city: 'Tbilisi',
+    district,
+    metro,
+    address,
+    mapLink: 'https://maps.google.com/',
+    source: 'Owner',
+    building: 'Residential building',
+    titleRu: `${district} ${dealType === 'Rent' ? 'аренда' : 'продажа'}`,
+    titleEn: `${bedrooms} bedroom apartment in ${district}`,
+    descriptionRu: 'Seed объект для аналитики и проверки CRM.',
+    descriptionEn: 'Seed listing for CRM analytics and QA.',
+    price,
+    area,
+    bedrooms,
+    rooms: String(Number(bedrooms) + 1),
+    floor,
+    totalFloors,
+    tenantsCount: dealType === 'Sale' ? '' : '1-4',
+    buildingType: index % 3 === 0 ? 'OldBuilding' : 'NewBuilding',
+    renovation: index % 2 === 0 ? 'White' : 'Grey',
+    heating: 'CentralHeating',
+    balcony: true,
+    elevator: true,
+    oven: true,
+    stove: true,
+    tv: true,
+    vacuumCleaner: true,
+    shower: true,
+    internet: true,
+    parking: index % 2 === 0,
+    airConditioner: true,
+    petPolicy: 'ByAgreement',
+    deposit: dealType === 'Sale' ? '' : price,
+    owner: `Owner ${index + 4}`,
+    ownerPhone: '+995 599 20 67 16',
+    ownerTelegram: '@owner_seed',
+    status: status as PropertyStatus,
+    exclusive: index % 2 === 0,
+    agent,
+    operator: 'Mari',
+    publicationContact: '@David_Tibelashvili',
+    photos: [photo],
+    mainPhotoId: photo.id,
+    createdAt: `2026-07-0${Math.min(index + 1, 8)}T10:00:00.000Z`,
+    updatedAt: `2026-07-0${Math.min(index + 1, 8)}T12:00:00.000Z`,
+  };
+});
+
+const seedProperties = [...starterProperties, ...extraSeedProperties];
 
 const starterAgents: Agent[] = [
   {
@@ -495,6 +659,17 @@ const starterAgents: Agent[] = [
     commissionPercent: 50,
     isActive: true,
   },
+  {
+    id: 'agent-5',
+    name: 'Sergi Matchavariani',
+    telegram: '@sergi_molecula',
+    phone: '+995 599 88 77 66',
+    role: 'Агент 90%',
+    dealsCount: 27,
+    exclusiveCount: 16,
+    commissionPercent: 90,
+    isActive: true,
+  },
 ];
 
 const starterOwners: Owner[] = [
@@ -518,6 +693,36 @@ const starterOwners: Owner[] = [
     notes: 'Документы проверены.',
     trustManagement: false,
   },
+  {
+    id: 'owner-3',
+    name: 'Irakli Nadiradze',
+    phone: '+995 555 77 88 90',
+    telegram: '@irakli_owner',
+    objects: ['RIT-1003'],
+    language: 'EN',
+    notes: 'Готов к эксклюзиву после первой сдачи.',
+    trustManagement: true,
+  },
+  {
+    id: 'owner-4',
+    name: 'Natia Dolidze',
+    phone: '+995 598 44 33 22',
+    telegram: '@natia_owner',
+    objects: ['RIT-1006'],
+    language: 'GE/RU',
+    notes: 'Просит отчеты по показам каждую неделю.',
+    trustManagement: false,
+  },
+  {
+    id: 'owner-5',
+    name: 'Saba Kordzaia',
+    phone: '+995 557 22 11 00',
+    telegram: '@saba_owner',
+    objects: ['RIT-1008'],
+    language: 'EN',
+    notes: 'Инвестор, несколько объектов в работе.',
+    trustManagement: true,
+  },
 ];
 
 const starterClients: Client[] = [
@@ -533,6 +738,54 @@ const starterClients: Client[] = [
     agent: 'Nino Beridze',
     notes: 'Нужен лифт и pet friendly.',
   },
+  {
+    id: 'client-2',
+    name: 'Mark Wilson',
+    phone: '+995 555 10 20 30',
+    telegram: '@mark_tbilisi',
+    budget: '200000-280000$',
+    request: 'Sale apartment in Vake',
+    district: 'Vake',
+    status: 'Viewing',
+    agent: 'Ana Lomidze',
+    notes: 'Interested in new buildings.',
+  },
+  {
+    id: 'client-3',
+    name: 'Anna Schmidt',
+    phone: '+995 577 12 12 12',
+    telegram: '@anna_schmidt',
+    budget: '700-1000$',
+    request: '1Bed near metro',
+    district: 'Saburtalo',
+    status: 'Active',
+    agent: 'Nino Beridze',
+    notes: 'Needs contract for 12 months.',
+  },
+  {
+    id: 'client-4',
+    name: 'Giorgi Investor',
+    phone: '+995 599 55 44 33',
+    telegram: '@giorgi_invest',
+    budget: '300000$',
+    request: 'Commercial or hotel opportunity',
+    district: 'Old Tbilisi',
+    status: 'Warm',
+    agent: 'David Tibelashvili',
+    notes: 'Asks for cap rate.',
+  },
+  {
+    id: 'client-5',
+    name: 'Kate Novak',
+    phone: '+995 551 91 91 91',
+    telegram: '@kate_novak',
+    budget: 'Daily 80-120$',
+    request: 'Daily rent in old city',
+    district: 'Avlabari',
+    status: 'New',
+    agent: 'Sergi Matchavariani',
+    notes: 'Arrives next week.',
+  },
 ];
 
 const starterDeals: Deal[] = [
@@ -542,12 +795,125 @@ const starterDeals: Deal[] = [
     client: 'Private buyer',
     owner: 'Mariam Janelidze',
     agent: 'David Tibelashvili',
-    dealType: 'Продажа',
+    dealType: 'Sale',
     amount: '185000$',
     commission: '3%',
     date: '2026-06-28',
     status: 'Закрыта',
     notes: 'Успешная продажа.',
+  },
+  {
+    id: 'deal-2',
+    propertyId: 'RIT-1004',
+    client: 'Anna Schmidt',
+    owner: 'Owner 4',
+    agent: 'Nino Beridze',
+    dealType: 'Rent',
+    amount: '980$',
+    commission: '490$',
+    date: '2026-07-07',
+    status: 'Closed',
+    notes: 'Rented this week.',
+  },
+  {
+    id: 'deal-3',
+    propertyId: 'RIT-1008',
+    client: 'Private buyer',
+    owner: 'Saba Kordzaia',
+    agent: 'David Tibelashvili',
+    dealType: 'Sale',
+    amount: '320000$',
+    commission: '9600$',
+    date: '2026-07-03',
+    status: 'Closed',
+    notes: 'Premium sale.',
+  },
+  {
+    id: 'deal-4',
+    propertyId: 'RIT-1001',
+    client: 'Elena Petrova',
+    owner: 'Giorgi Maisuradze',
+    agent: 'David Tibelashvili',
+    dealType: 'Rent',
+    amount: '1200$',
+    commission: '600$',
+    date: '2026-07-02',
+    status: 'Signed',
+    notes: 'Waiting for payment.',
+  },
+  {
+    id: 'deal-5',
+    propertyId: 'RIT-1006',
+    client: 'Mark Wilson',
+    owner: 'Natia Dolidze',
+    agent: 'Ana Lomidze',
+    dealType: 'Sale',
+    amount: '245000$',
+    commission: '7350$',
+    date: '2026-07-05',
+    status: 'New',
+    notes: 'Negotiation stage.',
+  },
+];
+
+const starterPublications: Publication[] = [
+  {
+    id: 'pub-1',
+    propertyId: 'RIT-1001',
+    propertyTitle: 'Beautiful apartment for rent in Vake',
+    date: '2026-07-08T09:30:00.000Z',
+    author: 'David Tibelashvili',
+    channel: 'Demo',
+    status: 'Copied',
+    text: 'Seed Telegram post',
+    photosCount: 3,
+  },
+  {
+    id: 'pub-2',
+    propertyId: 'RIT-1005',
+    propertyTitle: '2 bedroom apartment in Saburtalo',
+    date: '2026-07-07T11:00:00.000Z',
+    author: 'Sergi Matchavariani',
+    channel: 'Test',
+    status: 'Test Published',
+    text: 'Seed test channel post',
+    photosCount: 1,
+    messageLink: 'https://t.me/rentintbilisi_test/1',
+  },
+  {
+    id: 'pub-3',
+    propertyId: 'RIT-1006',
+    propertyTitle: '3 bedroom apartment in Vake',
+    date: '2026-07-03T14:30:00.000Z',
+    author: 'Ana Lomidze',
+    channel: 'Demo',
+    status: 'Draft',
+    text: 'Seed draft post',
+    photosCount: 1,
+  },
+  {
+    id: 'pub-4',
+    propertyId: 'RIT-1008',
+    propertyTitle: 'Premium sale in Krtsanisi',
+    date: '2026-07-02T17:15:00.000Z',
+    author: 'David Tibelashvili',
+    channel: 'Production',
+    status: 'Production Published',
+    text: 'Seed production post',
+    photosCount: 1,
+    messageLink: 'https://t.me/rentintbilisi/1',
+  },
+  {
+    id: 'pub-5',
+    propertyId: 'RIT-1003',
+    propertyTitle: 'Cozy apartment near metro',
+    date: '2026-06-29T10:45:00.000Z',
+    author: 'Nino Beridze',
+    channel: 'Demo',
+    status: 'Error',
+    text: 'Seed failed post',
+    photosCount: 1,
+    error: 'Backend not connected',
   },
 ];
 
@@ -570,7 +936,68 @@ function readStorage<T>(key: string, fallback: T): T {
 }
 
 function normalizeBoolean(value: unknown) {
-  return value === true || value === 'true' || value === 'Да';
+  return value === true || value === 'true' || value === 'Да' || value === 'Allowed';
+}
+
+function normalizeDealType(value: unknown): DealType {
+  if (value === 'Rent' || value === 'Аренда') return 'Rent';
+  if (value === 'Sale' || value === 'Продажа') return 'Sale';
+  if (value === 'Daily Rent') return 'Daily Rent';
+  return 'Rent';
+}
+
+function normalizeCategoryValue(value: unknown): Category {
+  const map: Record<string, Category> = {
+    Apartment: 'Apartment',
+    House: 'House',
+    Commercial: 'Commercial',
+    Land: 'Land',
+    Office: 'Office',
+    Hotel: 'Hotel',
+    Квартира: 'Apartment',
+    Дом: 'House',
+    Коммерция: 'Commercial',
+    Земля: 'Land',
+    Офис: 'Office',
+    Отель: 'Hotel',
+  };
+  return map[String(value)] || 'Apartment';
+}
+
+function normalizeStatusValue(value: unknown): PropertyStatus {
+  const map: Record<string, PropertyStatus> = {
+    New: 'New',
+    'In Progress': 'In Progress',
+    'On Advertising': 'On Advertising',
+    Reserved: 'Reserved',
+    Rented: 'Rented',
+    Sold: 'Sold',
+    Archived: 'Archived',
+    Новый: 'New',
+    'В работе': 'In Progress',
+    'На рекламе': 'On Advertising',
+    Сдан: 'Rented',
+    Продан: 'Sold',
+    Архив: 'Archived',
+  };
+  return map[String(value)] || 'New';
+}
+
+function normalizePetPolicy(value: unknown): PetPolicy {
+  const map: Record<string, PetPolicy> = {
+    Allowed: 'Allowed',
+    NotAllowed: 'NotAllowed',
+    ByAgreement: 'ByAgreement',
+    Да: 'Allowed',
+    Нет: 'NotAllowed',
+    Обсуждается: 'ByAgreement',
+  };
+  return map[String(value)] || 'ByAgreement';
+}
+
+function mergeById<T extends { id: string }>(saved: T[], seeds: T[]) {
+  const ids = new Set(saved.map((item) => item.id));
+  return [...saved, ...seeds.filter((item) => !ids.has(item.id))];
 }
 
 function normalizeProperty(property: Partial<Property> & Record<string, unknown>, index: number): Property {
@@ -588,12 +1015,16 @@ function normalizeProperty(property: Partial<Property> & Record<string, unknown>
     id: String(property.id || `RIT-${1000 + index}`),
     createdAt: String(property.createdAt || new Date().toISOString()),
     updatedAt: String(property.updatedAt || property.createdAt || new Date().toISOString()),
-    dealType: dealTypes.includes(property.dealType as DealType) ? (property.dealType as DealType) : 'Аренда',
-    category: categories.includes(property.category as Category) ? (property.category as Category) : 'Квартира',
+    dealType: normalizeDealType(property.dealType),
+    category: normalizeCategoryValue(property.category),
+    city: String(property.city || 'Tbilisi'),
     district: String(property.district || ''),
     metro: String(property.metro || ''),
     address: String(property.address || ''),
+    mapLink: String(property.mapLink || ''),
+    cadastralCode: String(property.cadastralCode || ''),
     building: String(property.building || ''),
+    source: String(property.source || 'Owner'),
     titleRu: String(property.titleRu || property.address || ''),
     titleEn: String(property.titleEn || property.address || ''),
     descriptionRu: String(property.descriptionRu || property.notes || property.internalNotes || ''),
@@ -605,7 +1036,14 @@ function normalizeProperty(property: Partial<Property> & Record<string, unknown>
     rooms: String(property.rooms || ''),
     floor: String(floorParts[0] || ''),
     totalFloors: String(property.totalFloors || floorParts[1] || ''),
-    heating: String(property.heating || 'Central Heating'),
+    tenantsCount: String(property.tenantsCount || '1-4'),
+    buildingType: buildingTypes.includes(property.buildingType as BuildingType)
+      ? (property.buildingType as BuildingType)
+      : 'NewBuilding',
+    renovation: renovationTypes.includes(property.renovation as RenovationType)
+      ? (property.renovation as RenovationType)
+      : 'White',
+    heating: String(property.heating || 'CentralHeating').replace(/\s+/g, ''),
     airConditioner: normalizeBoolean(property.airConditioner),
     balcony: normalizeBoolean(property.balcony),
     elevator: normalizeBoolean(property.elevator),
@@ -613,24 +1051,30 @@ function normalizeProperty(property: Partial<Property> & Record<string, unknown>
     dishwasher: normalizeBoolean(property.dishwasher),
     oven: normalizeBoolean(property.oven),
     stove: property.stove === undefined ? true : normalizeBoolean(property.stove),
+    tv: property.tv === undefined ? true : normalizeBoolean(property.tv),
+    vacuumCleaner: property.vacuumCleaner === undefined ? true : normalizeBoolean(property.vacuumCleaner),
+    shower: property.shower === undefined ? true : normalizeBoolean(property.shower),
     fridge: property.fridge === undefined ? true : normalizeBoolean(property.fridge),
     washingMachine: property.washingMachine === undefined ? true : normalizeBoolean(property.washingMachine),
     internet: property.internet === undefined ? true : normalizeBoolean(property.internet),
-    petPolicy: petPolicies.includes(property.petPolicy as PetPolicy) ? (property.petPolicy as PetPolicy) : 'Обсуждается',
-    rentalTerm: String(property.rentalTerm || '12 месяцев'),
-    deposit: String(property.deposit || '1 месяц'),
+    petPolicy: normalizePetPolicy(property.petPolicy),
+    rentalTerm: String(property.rentalTerm || '12Month'),
+    deposit: String(property.deposit || ''),
     clientCommission: '0%',
     ownerCommission: String(property.ownerCommission || '50%'),
+    taxIncluded: normalizeBoolean(property.taxIncluded),
     agent: String(property.agent || 'David Tibelashvili'),
     operator: String(property.operator || 'Mari'),
+    publicationContact: String(property.publicationContact || '@David_Tibelashvili'),
     owner: String(property.owner || ''),
     ownerPhone: String(property.ownerPhone || ''),
     ownerTelegram: String(property.ownerTelegram || ''),
-    status: propertyStatuses.includes(property.status as PropertyStatus) ? (property.status as PropertyStatus) : 'Новый',
+    status: normalizeStatusValue(property.status),
     exclusive: normalizeBoolean(property.exclusive),
     internalNotes: String(property.internalNotes || property.notes || ''),
     photos,
     mainPhotoId: String(property.mainPhotoId || photos[0]?.id || ''),
+    videoUrl: String(property.videoUrl || ''),
   };
   return normalized;
 }
@@ -650,33 +1094,189 @@ function normalizeAgent(agent: Partial<Agent>, index: number): Agent {
 }
 
 function loadProperties() {
-  const saved = readStorage<Partial<Property>[]>(PROPERTY_STORAGE_KEY, starterProperties);
-  return Array.isArray(saved) && saved.length > 0 ? saved.map(normalizeProperty) : starterProperties;
+  const saved = readStorage<Partial<Property>[]>(PROPERTY_STORAGE_KEY, seedProperties);
+  const normalized = Array.isArray(saved) && saved.length > 0 ? saved.map(normalizeProperty) : seedProperties;
+  return mergeById(normalized, seedProperties);
 }
 
 function loadAgents() {
   const saved = readStorage<Partial<Agent>[]>(AGENT_STORAGE_KEY, starterAgents);
-  return Array.isArray(saved) && saved.length > 0 ? saved.map(normalizeAgent) : starterAgents;
+  const normalized = Array.isArray(saved) && saved.length > 0 ? saved.map(normalizeAgent) : starterAgents;
+  return mergeById(normalized, starterAgents);
+}
+
+function normalizePublication(publication: Partial<Publication>, index: number): Publication {
+  const statusMap: Record<string, PublicationStatus> = {
+    Draft: 'Draft',
+    Copied: 'Copied',
+    'Test Published': 'Test Published',
+    'Production Published': 'Production Published',
+    Error: 'Error',
+    черновик: 'Draft',
+    скопировано: 'Copied',
+    опубликовано: 'Test Published',
+    ошибка: 'Error',
+  };
+  const channel = publication.channel === 'Test' || publication.channel === 'Production' ? publication.channel : 'Demo';
+  return {
+    id: publication.id || `pub-imported-${index}`,
+    propertyId: publication.propertyId || '',
+    propertyTitle: publication.propertyTitle || 'Untitled object',
+    date: publication.date || new Date().toISOString(),
+    author: publication.author || 'Demo user',
+    channel,
+    status: statusMap[String(publication.status)] || 'Draft',
+    text: publication.text || '',
+    photosCount: Number(publication.photosCount || 0),
+    error: publication.error,
+    messageLink: publication.messageLink,
+  };
+}
+
+function normalizeBrandSettings(settings: Partial<BrandSettings>) {
+  const legacy = settings as Partial<BrandSettings> & Record<string, unknown>;
+  const publishingMode =
+    legacy.publishingMode === 'Demo' || legacy.publishingMode === 'Test' || legacy.publishingMode === 'Production'
+      ? legacy.publishingMode
+      : defaultBrandSettings.publishingMode;
+  return {
+    ...defaultBrandSettings,
+    ...settings,
+    testChannelId: String(settings.testChannelId || legacy.telegramChannelId || defaultBrandSettings.testChannelId),
+    productionChannelId: String(settings.productionChannelId || legacy.telegramChannelId || defaultBrandSettings.productionChannelId),
+    defaultSignature: String(settings.defaultSignature || legacy.agentSignature || defaultBrandSettings.defaultSignature),
+    publishingMode,
+  };
 }
 
 function safeNumber(value: string) {
   return Number(value.replace(/[^\d.]/g, '')) || 0;
 }
 
-function priceRangeTag(price: string) {
-  const numeric = safeNumber(price);
-  if (!numeric) return '#PriceOnRequest';
-  const bottom = Math.floor(numeric / 500) * 500;
-  const top = bottom + 500;
-  return `#Price${bottom}to${top}`;
+function pricePerM2(property: Pick<Property, 'area' | 'price'>) {
+  const area = safeNumber(property.area);
+  const price = safeNumber(property.price);
+  return area > 0 && price > 0 ? Math.round(price / area) : 0;
 }
 
-function hashtag(value: string) {
-  const cleaned = value
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .trim()
-    .replace(/\s+/g, '');
-  return cleaned ? `#${cleaned}` : '';
+function priceRangeTag(price: string) {
+  const numeric = safeNumber(price);
+  if (numeric < 300) return '#Price0to300';
+  if (numeric < 500) return '#Price300to500';
+  if (numeric < 700) return '#Price500to700';
+  if (numeric < 900) return '#Price700to900';
+  if (numeric <= 1200) return '#Price900to1200';
+  return '#Price1200plus';
+}
+
+function minPositive(values: number[]) {
+  const filtered = values.filter((value) => Number.isFinite(value) && value > 0);
+  return filtered.length ? Math.min(...filtered) : 0;
+}
+
+function maxPositive(values: number[]) {
+  const filtered = values.filter((value) => Number.isFinite(value) && value > 0);
+  return filtered.length ? Math.max(...filtered) : 0;
+}
+
+const districtTags: Record<string, string> = {
+  Vera: '#Vera',
+  Mtatsminda: '#Mtatsminda',
+  Vake: '#Vake',
+  Sololaki: '#Sololaki',
+  Kukia: '#Kukia',
+  Nadzaladevi: '#Nadzaladevi',
+  Naxalovka: '#Naxalovka',
+  'Savnetis Ubani': '#SavnetisUbani',
+  Tskneti: '#Tskneti',
+  Tskhneti: '#Tskhneti',
+  Chugureti: '#Chugureti',
+  'Vazha Pshavela': '#VazhaPshavela',
+  Nutsubidze: '#Nutsubidze',
+  Saburtalo: '#Saburtalo',
+  Didube: '#Didube',
+  Gldani: '#Gldani',
+  Avlabari: '#Avlabari',
+  Isani: '#Isani',
+  Samgori: '#Samgori',
+  Digomi: '#Digomi',
+  'Didi Digomi': '#DidiDigomi',
+  'Digomi Massive': '#DigomiMassive',
+  Varketili: '#Varketili',
+  Ortachala: '#Ortachala',
+  Abanotubani: '#Abanotubani',
+  Saguramo: '#Saguramo',
+  Krtsanisi: '#Krtsanisi',
+  Vashlijvari: '#Vashlijvari',
+  Temqa: '#Temqa',
+  Iverubani: '#Iverubani',
+  Vazisubani: '#Vazisubani',
+  Afrika: '#Afrika',
+  Ponichala: '#Ponichala',
+  Avchala: '#Avchala',
+  Bagebi: '#Bagebi',
+  Lisi: '#Lisi',
+  'Old Tbilisi': '#Avlabari',
+};
+
+const metroTags: Record<string, string> = {
+  'Liberty Square': '#LibertySquare',
+  Rustaveli: '#Rustaveli',
+  Marjanishvili: '#Marjanishvili',
+  'Station Square': '#StationSquare',
+  Tsereteli: '#Tsereteli',
+  Gotsiridze: '#Gotsiridze',
+  Nadzaladevi: '#Nadzaladevi',
+  Didube: '#Didube',
+  Grmagele: '#Grmagele',
+  Guramishvili: '#Guramishvili',
+  Sarajishvili: '#Sarajishvili',
+  'Ahmeteli Theatre': '#AhmeteliTheatre',
+  STUniversity: '#STUniversity',
+  'Vazha Pshavela': '#VazhaPshavela',
+  Delisi: '#Delisi',
+  TCUniversity: '#TCUniversity',
+  'Medical University': '#MCUniversity',
+  MCUniversity: '#MCUniversity',
+  AvlabariMetro: '#AvlabariMetro',
+  '300 Aragveli': '#300Aragveli',
+  '300Aragveli': '#300Aragveli',
+  IsaniMetro: '#IsaniMetro',
+  SamgoriMetro: '#SamgoriMetro',
+  Varketili: '#Varketili',
+};
+
+const categoryTags: Record<Category, string> = {
+  Apartment: '#Apartment',
+  House: '#House',
+  Commercial: '#Commercial',
+  Land: '#Commercial',
+  Office: '#Commercial',
+  Hotel: '#Commercial',
+};
+
+function tagFromMap(map: Record<string, string>, value: string) {
+  return map[value] || '';
+}
+
+function bedTag(value: string) {
+  const bedrooms = Math.min(Math.max(Math.round(safeNumber(value)), 1), 4);
+  return `#${bedrooms}Bed`;
+}
+
+function dealTag(value: DealType) {
+  if (value === 'Sale') return '#Sale';
+  if (value === 'Daily Rent') return '#DailyRent';
+  return '#Rent';
+}
+
+function petTag(value: PetPolicy) {
+  return `#${value}`;
+}
+
+function cleanTagValue(value: string, fallback: string) {
+  const normalized = value.replace(/[^a-zA-Z0-9]/g, '');
+  return normalized || fallback;
 }
 
 function getMainPhoto(property: Property) {
@@ -692,14 +1292,34 @@ function formatPrice(property: Property) {
 }
 
 function getPropertyStats(properties: Property[]) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const weekStart = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const monthStart = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+  const realized = properties.filter((property) => property.status === 'Rented' || property.status === 'Sold');
+  const addedWeek = properties.filter((property) => Date.parse(property.createdAt) >= weekStart).length;
+  const addedMonth = properties.filter((property) => Date.parse(property.createdAt) >= monthStart).length;
+  const realizedWeek = realized.filter((property) => Date.parse(property.updatedAt) >= weekStart).length;
+  const realizedMonth = realized.filter((property) => Date.parse(property.updatedAt) >= monthStart).length;
   return {
     total: properties.length,
-    inWork: properties.filter((property) => property.status === 'В работе').length,
-    onAds: properties.filter((property) => property.status === 'На рекламе').length,
-    rented: properties.filter((property) => property.status === 'Сдан').length,
-    sold: properties.filter((property) => property.status === 'Продан').length,
-    archived: properties.filter((property) => property.status === 'Архив').length,
+    active: properties.filter((property) => !['Rented', 'Sold', 'Archived'].includes(property.status)).length,
+    inWork: properties.filter((property) => property.status === 'In Progress').length,
+    onAds: properties.filter((property) => property.status === 'On Advertising').length,
+    rented: properties.filter((property) => property.status === 'Rented').length,
+    sold: properties.filter((property) => property.status === 'Sold').length,
+    archived: properties.filter((property) => property.status === 'Archived').length,
     exclusive: properties.filter((property) => property.exclusive).length,
+    rentedToday: properties.filter((property) => property.status === 'Rented' && Date.parse(property.updatedAt) >= todayStart).length,
+    rentedWeek: properties.filter((property) => property.status === 'Rented' && Date.parse(property.updatedAt) >= weekStart).length,
+    rentedMonth: properties.filter((property) => property.status === 'Rented' && Date.parse(property.updatedAt) >= monthStart).length,
+    soldWeek: properties.filter((property) => property.status === 'Sold' && Date.parse(property.updatedAt) >= weekStart).length,
+    soldMonth: properties.filter((property) => property.status === 'Sold' && Date.parse(property.updatedAt) >= monthStart).length,
+    addedWeek,
+    addedMonth,
+    realizedWeek,
+    realizedMonth,
+    conversionRate: properties.length ? Math.round((realized.length / properties.length) * 100) : 0,
   };
 }
 
@@ -724,70 +1344,142 @@ function thisWeekCount(publications: Publication[]) {
   return publications.filter((publication) => Date.parse(publication.date) >= weekAgo).length;
 }
 
+function thisMonthCount(publications: Publication[]) {
+  const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  return publications.filter((publication) => Date.parse(publication.date) >= monthAgo).length;
+}
+
+function average(values: number[]) {
+  const filtered = values.filter((value) => Number.isFinite(value) && value > 0);
+  return filtered.length ? Math.round(filtered.reduce((sum, value) => sum + value, 0) / filtered.length) : 0;
+}
+
+function median(values: number[]) {
+  const filtered = values.filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
+  if (!filtered.length) return 0;
+  const middle = Math.floor(filtered.length / 2);
+  return filtered.length % 2 ? filtered[middle] : Math.round((filtered[middle - 1] + filtered[middle]) / 2);
+}
+
+function districtAnalytics(properties: Property[]) {
+  return getDistricts(properties).map((district) => {
+    const districtProperties = properties.filter((property) => property.district === district);
+    const rent = districtProperties.filter((property) => property.dealType === 'Rent');
+    const sale = districtProperties.filter((property) => property.dealType === 'Sale');
+    const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return {
+      district,
+      rentCount: rent.length,
+      avgRent: average(rent.map((property) => safeNumber(property.price))),
+      medianRent: median(rent.map((property) => safeNumber(property.price))),
+      minRent: minPositive(rent.map((property) => safeNumber(property.price))),
+      maxRent: maxPositive(rent.map((property) => safeNumber(property.price))),
+      avgRentM2: average(rent.map(pricePerM2)),
+      saleCount: sale.length,
+      avgSale: average(sale.map((property) => safeNumber(property.price))),
+      medianSale: median(sale.map((property) => safeNumber(property.price))),
+      avgSaleM2: average(sale.map(pricePerM2)),
+      avg1Bed: average(rent.filter((property) => property.bedrooms === '1').map((property) => safeNumber(property.price))),
+      avg2Bed: average(rent.filter((property) => property.bedrooms === '2').map((property) => safeNumber(property.price))),
+      avg3Bed: average(rent.filter((property) => property.bedrooms === '3').map((property) => safeNumber(property.price))),
+      realizedMonth: districtProperties.filter(
+        (property) => ['Rented', 'Sold'].includes(property.status) && Date.parse(property.updatedAt) >= monthAgo,
+      ).length,
+    };
+  });
+}
+
+function agentAnalytics(agents: Agent[], properties: Property[], deals: Deal[], publications: Publication[]) {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  return agents
+    .map((agent) => {
+      const agentProperties = properties.filter((property) => property.agent === agent.name);
+      const agentDeals = deals.filter((deal) => deal.agent === agent.name);
+      const realized = agentProperties.filter((property) => ['Rented', 'Sold'].includes(property.status));
+      const commissions = agentDeals.map((deal) => safeNumber(deal.commission));
+      return {
+        ...agent,
+        objects: agentProperties.length,
+        exclusives: agentProperties.filter((property) => property.exclusive).length,
+        rented: agentProperties.filter((property) => property.status === 'Rented').length,
+        sold: agentProperties.filter((property) => property.status === 'Sold').length,
+        deals: agentDeals.length,
+        commissionSum: commissions.reduce((sum, value) => sum + value, 0),
+        avgCommission: average(commissions),
+        conversion: agentProperties.length ? Math.round((realized.length / agentProperties.length) * 100) : 0,
+        weekActivity: agentProperties.filter((property) => Date.parse(property.updatedAt) >= weekAgo).length,
+        monthActivity: agentProperties.filter((property) => Date.parse(property.updatedAt) >= monthAgo).length,
+        publications: publications.filter((publication) => publication.author === agent.name).length,
+      };
+    })
+    .sort((a, b) => b.commissionSum - a.commissionSum || b.exclusives - a.exclusives);
+}
+
 function buildTelegramPost(property: Property, settings: BrandSettings, language: PostLanguage, forcedDealType?: DealType) {
   const dealType = forcedDealType || property.dealType;
-  const districtTag = hashtag(property.district);
-  const metroTag = property.metro ? hashtag(property.metro) : '';
-  const categoryTag = hashtag(property.category);
-  const dealTag = dealType === 'Аренда' ? '#Rent' : '#Sale';
-  const bedTag = property.bedrooms ? `#${property.bedrooms}Bed` : '#Apartment';
-  const featureLine = ['#NewBuilding', '#ModernRenovation'].join(' | ');
-  const floor = property.floor && property.totalFloors ? `${property.floor}/${property.totalFloors}Floor` : '';
-  const heating = property.heating ? hashtag(property.heating) : '';
-  const features = [
-    property.stove && '#Stove',
-    property.oven && '#Oven',
-    property.internet && '#WiFi',
-    property.balcony && '#Balcony',
-    property.elevator && '#Elevator',
-    property.dishwasher && '#Dishwasher',
-    property.parking && '#Parking',
-    property.airConditioner && '#AC',
-  ].filter(Boolean);
-  const title =
-    language === 'EN'
-      ? `Beautiful ${property.category.toLowerCase()} for ${dealType === 'Аренда' ? 'rent' : 'sale'} in ${property.district}`
-      : `${property.category} ${dealType === 'Аренда' ? 'в аренду' : 'на продажу'} в районе ${property.district}`;
-  const money = property.price ? `${property.price}${property.currency}` : 'Price on request';
+  const districtTag = tagFromMap(districtTags, property.district) || '#OutOfTown';
+  const metroTag = tagFromMap(metroTags, property.metro);
+  const floor = property.floor && property.totalFloors ? `${property.floor}/${property.totalFloors} Floor` : '';
+  const primaryLineTags = [bedTag(property.bedrooms), categoryTags[property.category], 'for', dealTag(dealType)].join(' ');
+  const amenityRows = [
+    [property.balcony && '#Balcony', property.internet && '#WiFi', property.tv && '#TV'],
+    [property.stove && '#Stove', property.vacuumCleaner && '#VacuumCleaner'],
+    [property.elevator && '#Elevator', property.oven && '#Oven'],
+    [property.parking && '#ParkingPlace'],
+    [property.airConditioner && '#Conditioner'],
+  ]
+    .map((row) => row.filter(Boolean).map((tag) => `✅ ${tag}`).join(' '))
+    .filter(Boolean);
+  const heatingTag = `#${cleanTagValue(property.heating, 'CentralHeating')}`;
+  const showerTag = property.shower ? ' | #Shower' : '';
+  const money =
+    dealType === 'Rent' || dealType === 'Daily Rent'
+      ? `${property.price}${property.currency} + Deposit ${property.deposit || property.price}${property.currency}`
+      : `${property.price}${property.currency}`;
+  const contact = property.publicationContact || settings.mainContact;
+  const contactSignature = language === 'RU' ? settings.defaultSignature : settings.defaultSignature;
 
   return [
-    `${districtTag}  ${property.metro ? `🚇 ${metroTag}` : ''}`.trim(),
+    `${districtTag}${metroTag ? ` 🚇 ${metroTag}` : ''}`,
     `📍${property.address}`,
     '',
-    `🌟${title}🌟`,
+    ...(property.exclusive ? ['❗️#Exclusive', ''] : []),
+    `🏢 ${primaryLineTags}`,
+    `✨ #${property.buildingType} | #${property.renovation}`,
+    `🏠${property.area || '-'} sq.m | ${floor || '-'} |`,
+    `${heatingTag}${showerTag}`,
     '',
-    `🏢 ${bedTag} ${categoryTag} for ${dealTag}`,
-    `✨${featureLine}`,
-    `🏠${property.area || '-'} Sq.m | ${floor || '-'} | ${heating || '#Heating'} | #Shower`,
+    ...amenityRows,
     '',
-    ...features.reduce<string[]>((rows, feature, index) => {
-      if (index % 2 === 0) rows.push(`✅${feature}`);
-      else rows[rows.length - 1] = `${rows[rows.length - 1]} ✅${feature}`;
-      return rows;
-    }, []),
+    `👫Tenants: ${property.tenantsCount || '1-4'}`,
+    `🐕Pets: ${petTag(property.petPolicy)}`,
     '',
     `💰${money}`,
+    ...(settings.includeZeroCommission ? ['0% Commission'] : []),
     priceRangeTag(property.price),
     '',
-    `📲 ${settings.mainContact} |`,
-    `${settings.phone} ${settings.agentSignature}`,
-    '🌟 Check all listings | Reviews',
+    `➡️🏢 ${contact} |`,
+    `${settings.phone} ${contactSignature}`,
     '',
-    '📍APARTMENTS ON MAP📍',
-  ].join('\n');
+    ...(settings.includeMapBlock ? ['📍APARTMENTS ON MAP📍'] : []),
+  ]
+    .filter((line, index, lines) => line !== '' || lines[index - 1] !== '')
+    .join('\n')
+    .trim();
 }
 
 function AppProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<Property[]>(loadProperties);
   const [agents] = useState<Agent[]>(loadAgents);
-  const [owners] = useState<Owner[]>(() => readStorage<Owner[]>(OWNER_STORAGE_KEY, starterOwners));
-  const [clients] = useState<Client[]>(() => readStorage<Client[]>(CLIENT_STORAGE_KEY, starterClients));
-  const [deals] = useState<Deal[]>(() => readStorage<Deal[]>(DEAL_STORAGE_KEY, starterDeals));
+  const [owners] = useState<Owner[]>(() => mergeById(readStorage<Owner[]>(OWNER_STORAGE_KEY, starterOwners), starterOwners));
+  const [clients] = useState<Client[]>(() => mergeById(readStorage<Client[]>(CLIENT_STORAGE_KEY, starterClients), starterClients));
+  const [deals] = useState<Deal[]>(() => mergeById(readStorage<Deal[]>(DEAL_STORAGE_KEY, starterDeals), starterDeals));
   const [publications, setPublications] = useState<Publication[]>(() =>
-    readStorage<Publication[]>(PUBLICATION_STORAGE_KEY, []),
+    mergeById(readStorage<Partial<Publication>[]>(PUBLICATION_STORAGE_KEY, starterPublications).map(normalizePublication), starterPublications),
   );
   const [brandSettings, setBrandSettingsState] = useState<BrandSettings>(() =>
-    readStorage<BrandSettings>(SETTINGS_STORAGE_KEY, defaultBrandSettings),
+    normalizeBrandSettings(readStorage<Partial<BrandSettings>>(SETTINGS_STORAGE_KEY, defaultBrandSettings)),
   );
   const [session, setSessionState] = useState<Session | null>(() =>
     readStorage<Session | null>(SESSION_STORAGE_KEY, null),
@@ -911,6 +1603,9 @@ export function App() {
             <Route path="/owners" element={<OwnersPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/deals" element={<DealsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/districts" element={<DistrictsPage />} />
+            <Route path="/publications" element={<PublicationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -1025,6 +1720,9 @@ function ProtectedLayout() {
           <NavItem icon={Home} label="Собственники" to="/owners" />
           <NavItem icon={UserRound} label="Клиенты" to="/clients" />
           <NavItem icon={Handshake} label="Сделки" to="/deals" />
+          <NavItem icon={BarChart3} label="Аналитика" to="/analytics" />
+          <NavItem icon={Building2} label="Районы и цены" to="/districts" />
+          <NavItem icon={FileText} label="Публикации" to="/publications" />
           <NavItem icon={Settings} label="Настройки" to="/settings" />
         </nav>
 
@@ -1100,20 +1798,32 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith('/owners')) return 'Собственники';
   if (pathname.startsWith('/clients')) return 'Клиенты';
   if (pathname.startsWith('/deals')) return 'Сделки';
+  if (pathname.startsWith('/analytics')) return 'Аналитика';
+  if (pathname.startsWith('/districts')) return 'Районы и цены';
+  if (pathname.startsWith('/publications')) return 'Публикации';
   if (pathname.startsWith('/settings')) return 'Настройки бренда';
   return 'Dashboard';
 }
 
 function DashboardPage() {
-  const { agents, properties, publications } = useCrm();
+  const { agents, deals, properties, publications } = useCrm();
   const stats = getPropertyStats(properties);
+  const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const monthCommission = deals
+    .filter((deal) => Date.parse(deal.date) >= monthAgo)
+    .reduce((sum, deal) => sum + safeNumber(deal.commission), 0);
   const recentProperties = [...properties].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 4);
   const cards = [
     { label: 'Всего объектов', value: stats.total, icon: Building2 },
+    { label: 'Активные', value: stats.active, icon: BarChart3 },
     { label: 'На рекламе', value: stats.onAds, icon: Sparkles },
-    { label: 'Сдано', value: stats.rented, icon: Check },
-    { label: 'Продано', value: stats.sold, icon: Handshake },
     { label: 'Эксклюзивы', value: stats.exclusive, icon: ShieldCheck },
+    { label: 'Сдано за неделю', value: stats.rentedWeek, icon: Check },
+    { label: 'Сдано за месяц', value: stats.rentedMonth, icon: Check },
+    { label: 'Продано за месяц', value: stats.soldMonth, icon: Handshake },
+    { label: 'Добавлено за неделю', value: stats.addedWeek, icon: Plus },
+    { label: 'Реализовано за неделю', value: stats.realizedWeek, icon: Handshake },
+    { label: 'Комиссия за месяц', value: `${monthCommission}$`, icon: Sparkles },
     { label: 'Активные агенты', value: agents.filter((agent) => agent.isActive).length, icon: UsersRound },
     { label: 'Публикации за неделю', value: thisWeekCount(publications), icon: MessageCircle },
   ];
@@ -1125,6 +1835,10 @@ function DashboardPage() {
           <Link className="secondaryButton" to="/post-preview">
             <Smartphone size={18} />
             Создать пост
+          </Link>
+          <Link className="secondaryButton" to="/analytics">
+            <BarChart3 size={18} />
+            Открыть аналитику
           </Link>
           <Link className="primaryButton" to="/properties/new">
             <Plus size={18} />
@@ -1180,6 +1894,7 @@ function PropertyStats({ properties }: { properties: Property[] }) {
   const stats = getPropertyStats(properties);
   const items = [
     { label: 'Всего', value: stats.total },
+    { label: 'Активные', value: stats.active },
     { label: 'В работе', value: stats.inWork },
     { label: 'На рекламе', value: stats.onAds },
     { label: 'Сдано', value: stats.rented },
@@ -1295,6 +2010,7 @@ function PropertiesPage() {
                 <th>Район</th>
                 <th>Тип</th>
                 <th>Цена</th>
+                <th>Цена / м²</th>
                 <th>Площадь</th>
                 <th>Статус</th>
                 <th>Агент</th>
@@ -1315,6 +2031,7 @@ function PropertiesPage() {
                   <td>{property.district}</td>
                   <td>{property.dealType}</td>
                   <td>{formatPrice(property)}</td>
+                  <td>{pricePerM2(property) ? `${pricePerM2(property)}${property.currency}` : '-'}</td>
                   <td>{property.area || '-'} м²</td>
                   <td>
                     <span className={statusClassName(property.status)}>{property.status}</span>
@@ -1386,6 +2103,7 @@ function PropertyCard({ onDelete, property }: { onDelete?: (property: Property) 
         <div className="propertyFacts">
           <span>{property.district}</span>
           <span>{property.area || '-'} м²</span>
+          <span>{pricePerM2(property) ? `${pricePerM2(property)}${property.currency}/м²` : '-/м²'}</span>
           <span>{property.bedrooms || '-'} bed</span>
           <span>{property.floor || '-'}/{property.totalFloors || '-'}</span>
         </div>
@@ -1468,6 +2186,7 @@ function PropertyDetailPage() {
             <InfoItem label="Адрес" value={property.address} />
             <InfoItem label="Категория" value={property.category} />
             <InfoItem label="Площадь" value={`${property.area || '-'} м²`} />
+            <InfoItem label="Цена за м²" value={pricePerM2(property) ? `${pricePerM2(property)}${property.currency}` : '-'} />
             <InfoItem label="Спальни / комнаты" value={`${property.bedrooms || '-'} / ${property.rooms || '-'}`} />
             <InfoItem label="Этаж" value={`${property.floor || '-'}/${property.totalFloors || '-'}`} />
             <InfoItem label="Комиссия клиента" value={property.clientCommission} />
@@ -1529,10 +2248,14 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       ? {
           dealType: existingProperty.dealType,
           category: existingProperty.category,
+          city: existingProperty.city,
           district: existingProperty.district,
           metro: existingProperty.metro,
           address: existingProperty.address,
+          mapLink: existingProperty.mapLink,
+          cadastralCode: existingProperty.cadastralCode,
           building: existingProperty.building,
+          source: existingProperty.source,
           titleRu: existingProperty.titleRu,
           titleEn: existingProperty.titleEn,
           descriptionRu: existingProperty.descriptionRu,
@@ -1544,6 +2267,9 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           rooms: existingProperty.rooms,
           floor: existingProperty.floor,
           totalFloors: existingProperty.totalFloors,
+          tenantsCount: existingProperty.tenantsCount,
+          buildingType: existingProperty.buildingType,
+          renovation: existingProperty.renovation,
           heating: existingProperty.heating,
           airConditioner: existingProperty.airConditioner,
           balcony: existingProperty.balcony,
@@ -1552,6 +2278,9 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           dishwasher: existingProperty.dishwasher,
           oven: existingProperty.oven,
           stove: existingProperty.stove,
+          tv: existingProperty.tv,
+          vacuumCleaner: existingProperty.vacuumCleaner,
+          shower: existingProperty.shower,
           fridge: existingProperty.fridge,
           washingMachine: existingProperty.washingMachine,
           internet: existingProperty.internet,
@@ -1560,8 +2289,10 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           deposit: existingProperty.deposit,
           clientCommission: '0%',
           ownerCommission: existingProperty.ownerCommission,
+          taxIncluded: existingProperty.taxIncluded,
           agent: existingProperty.agent,
           operator: existingProperty.operator,
+          publicationContact: existingProperty.publicationContact,
           owner: existingProperty.owner,
           ownerPhone: existingProperty.ownerPhone,
           ownerTelegram: existingProperty.ownerTelegram,
@@ -1570,6 +2301,7 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           internalNotes: existingProperty.internalNotes,
           photos: existingProperty.photos,
           mainPhotoId: existingProperty.mainPhotoId,
+          videoUrl: existingProperty.videoUrl,
         }
       : emptyProperty,
   );
@@ -1630,20 +2362,26 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       id: existingProperty?.id || `RIT-${Date.now().toString().slice(-6)}`,
       createdAt: existingProperty?.createdAt || now,
       updatedAt: now,
-      titleRu: form.titleRu.trim() || `${form.category} ${form.dealType === 'Аренда' ? 'в аренду' : 'на продажу'} в ${form.district}`,
+      titleRu: form.titleRu.trim() || `${form.category} ${form.dealType === 'Sale' ? 'на продажу' : 'в аренду'} в ${form.district}`,
       titleEn:
         form.titleEn.trim() ||
-        `Beautiful ${form.category.toLowerCase()} for ${form.dealType === 'Аренда' ? 'rent' : 'sale'} in ${form.district}`,
+        `Beautiful ${form.category.toLowerCase()} for ${form.dealType === 'Sale' ? 'sale' : 'rent'} in ${form.district}`,
       address: form.address.trim(),
       district: form.district.trim(),
       price: form.price.trim(),
       area: form.area.trim(),
+      city: form.city.trim(),
+      mapLink: form.mapLink.trim(),
+      cadastralCode: form.cadastralCode.trim(),
+      source: form.source.trim(),
       agent: form.agent.trim(),
       operator: form.operator.trim(),
+      publicationContact: form.publicationContact.trim(),
       owner: form.owner.trim(),
       ownerPhone: form.ownerPhone.trim(),
       ownerTelegram: form.ownerTelegram.trim(),
       mainPhotoId: form.mainPhotoId || form.photos[0]?.id || '',
+      videoUrl: form.videoUrl.trim(),
     };
     upsertProperty(property);
     showToast(mode === 'create' ? 'Объект сохранен' : 'Изменения сохранены');
@@ -1677,6 +2415,10 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
             </select>
           </label>
           <label>
+            Город
+            <input value={form.city} onChange={(event) => updateField('city', event.target.value)} />
+          </label>
+          <label>
             Район
             <input required value={form.district} onChange={(event) => updateField('district', event.target.value)} />
           </label>
@@ -1687,6 +2429,18 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <label className="wideField">
             Адрес
             <input required value={form.address} onChange={(event) => updateField('address', event.target.value)} />
+          </label>
+          <label>
+            Источник объекта
+            <input value={form.source} onChange={(event) => updateField('source', event.target.value)} />
+          </label>
+          <label>
+            Ссылка на карту
+            <input value={form.mapLink} onChange={(event) => updateField('mapLink', event.target.value)} />
+          </label>
+          <label>
+            Кадастровый код
+            <input value={form.cadastralCode} onChange={(event) => updateField('cadastralCode', event.target.value)} />
           </label>
           <label>
             Комплекс / здание
@@ -1755,6 +2509,26 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
             <input value={form.totalFloors} onChange={(event) => updateField('totalFloors', event.target.value)} />
           </label>
           <label>
+            Tenants count
+            <input value={form.tenantsCount} onChange={(event) => updateField('tenantsCount', event.target.value)} />
+          </label>
+          <label>
+            Тип здания
+            <select value={form.buildingType} onChange={(event) => updateField('buildingType', event.target.value as BuildingType)}>
+              {buildingTypes.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Ремонт
+            <select value={form.renovation} onChange={(event) => updateField('renovation', event.target.value as RenovationType)}>
+              {renovationTypes.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             Отопление
             <input value={form.heating} onChange={(event) => updateField('heating', event.target.value)} />
           </label>
@@ -1768,6 +2542,9 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <ToggleField label="Посудомойка" checked={form.dishwasher} onChange={(value) => updateField('dishwasher', value)} />
           <ToggleField label="Духовка" checked={form.oven} onChange={(value) => updateField('oven', value)} />
           <ToggleField label="Плита" checked={form.stove} onChange={(value) => updateField('stove', value)} />
+          <ToggleField label="TV" checked={form.tv} onChange={(value) => updateField('tv', value)} />
+          <ToggleField label="Пылесос" checked={form.vacuumCleaner} onChange={(value) => updateField('vacuumCleaner', value)} />
+          <ToggleField label="Душ" checked={form.shower} onChange={(value) => updateField('shower', value)} />
           <ToggleField label="Холодильник" checked={form.fridge} onChange={(value) => updateField('fridge', value)} />
           <ToggleField label="Стиральная машина" checked={form.washingMachine} onChange={(value) => updateField('washingMachine', value)} />
           <ToggleField label="Интернет" checked={form.internet} onChange={(value) => updateField('internet', value)} />
@@ -1798,6 +2575,7 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
             Комиссия собственника
             <input value={form.ownerCommission} onChange={(event) => updateField('ownerCommission', event.target.value)} />
           </label>
+          <ToggleField label="Налог включен" checked={form.taxIncluded} onChange={(value) => updateField('taxIncluded', value)} />
           <label>
             Агент
             <input value={form.agent} onChange={(event) => updateField('agent', event.target.value)} />
@@ -1805,6 +2583,10 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <label>
             Оператор
             <input value={form.operator} onChange={(event) => updateField('operator', event.target.value)} />
+          </label>
+          <label>
+            Контакт для публикации
+            <input value={form.publicationContact} onChange={(event) => updateField('publicationContact', event.target.value)} />
           </label>
           <label>
             Собственник
@@ -1817,6 +2599,10 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           <label>
             Telegram собственника
             <input value={form.ownerTelegram} onChange={(event) => updateField('ownerTelegram', event.target.value)} />
+          </label>
+          <label>
+            Видео-ссылка
+            <input value={form.videoUrl} onChange={(event) => updateField('videoUrl', event.target.value)} />
           </label>
           <ToggleField label="Эксклюзив" checked={form.exclusive} onChange={(value) => updateField('exclusive', value)} />
         </FormSection>
@@ -1935,66 +2721,105 @@ function fileToPhoto(file: File) {
   });
 }
 
+function extractHashtags(text: string) {
+  return Array.from(new Set(text.match(/#[A-Za-z0-9]+/g) || [])).join(' ');
+}
+
+function publicationStatusClassName(status: PublicationStatus) {
+  return `status status-${status.toLowerCase().replace(/\s+/g, '-')}`;
+}
+
 function PostPreviewPage() {
-  const { addPublication, brandSettings, properties, publications, showToast } = useCrm();
+  const { addPublication, brandSettings, properties, publications, session, showToast } = useCrm();
   const searchParams = new URLSearchParams(useLocation().search);
   const initialPropertyId = searchParams.get('property') || properties[0]?.id || '';
   const [selectedPropertyId, setSelectedPropertyId] = useState(initialPropertyId);
   const selectedProperty = properties.find((property) => property.id === selectedPropertyId) || properties[0];
-  const [language, setLanguage] = useState<PostLanguage>('EN');
-  const [templateType, setTemplateType] = useState<DealType>(selectedProperty?.dealType || 'Аренда');
+  const [language, setLanguage] = useState<PostLanguage>(brandSettings.defaultLanguage);
+  const [templateType, setTemplateType] = useState<DealType>(selectedProperty?.dealType || 'Rent');
+  const [publishingMode, setPublishingMode] = useState<BrandSettings['publishingMode']>(brandSettings.publishingMode);
   const [copied, setCopied] = useState(false);
+  const [confirmProductionOpen, setConfirmProductionOpen] = useState(false);
 
   useEffect(() => {
     if (selectedProperty) setTemplateType(selectedProperty.dealType);
   }, [selectedProperty]);
 
   const postText = selectedProperty ? buildTelegramPost(selectedProperty, brandSettings, language, templateType) : '';
+  const hashtags = extractHashtags(postText);
+
+  function recordPublication(status: PublicationStatus, channel: Publication['channel'], error?: string, messageLink?: string) {
+    if (!selectedProperty) return;
+    addPublication({
+      id: crypto.randomUUID(),
+      propertyId: selectedProperty.id,
+      propertyTitle: selectedProperty.titleEn || selectedProperty.titleRu || selectedProperty.address,
+      date: new Date().toISOString(),
+      author: session?.name || selectedProperty.agent || 'Molecula user',
+      channel,
+      status,
+      text: postText,
+      photosCount: selectedProperty.photos.length,
+      error,
+      messageLink,
+    });
+  }
 
   async function copyPost() {
     await copyText(postText);
     setCopied(true);
     showToast('Пост скопирован');
-    if (selectedProperty) {
-      addPublication({
-        id: crypto.randomUUID(),
-        propertyId: selectedProperty.id,
-        propertyTitle: selectedProperty.titleRu || selectedProperty.address,
-        date: new Date().toISOString(),
-        channel: brandSettings.telegramChannelId || 'Demo channel',
-        status: 'скопировано',
-        text: postText,
-      });
-    }
+    recordPublication('Copied', publishingMode);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function copyHashtags() {
+    await copyText(hashtags);
+    setCopied(true);
+    showToast('Хэштеги скопированы');
     window.setTimeout(() => setCopied(false), 2000);
   }
 
   function saveDraft() {
-    if (!selectedProperty) return;
-    addPublication({
-      id: crypto.randomUUID(),
-      propertyId: selectedProperty.id,
-      propertyTitle: selectedProperty.titleRu || selectedProperty.address,
-      date: new Date().toISOString(),
-      channel: brandSettings.telegramChannelId || 'Demo channel',
-      status: 'черновик',
-      text: postText,
-    });
+    recordPublication('Draft', publishingMode);
     showToast('Пост сохранен в истории');
   }
 
-  function publishDemo() {
+  async function publishViaBackend(channel: 'Test' | 'Production') {
     if (!selectedProperty) return;
-    addPublication({
-      id: crypto.randomUUID(),
-      propertyId: selectedProperty.id,
-      propertyTitle: selectedProperty.titleRu || selectedProperty.address,
-      date: new Date().toISOString(),
-      channel: brandSettings.telegramChannelId || 'Backend not connected',
-      status: 'ошибка',
-      text: postText,
-    });
-    showToast('Telegram backend пока не подключен', 'warning');
+    const endpoint = channel === 'Test' ? '/api/telegram/publish-test' : '/api/telegram/publish-production';
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          objectId: selectedProperty.id,
+          text: postText,
+          photos: selectedProperty.photos.map((photo) => photo.src),
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = (await response.json()) as { messageLink?: string };
+      recordPublication(channel === 'Test' ? 'Test Published' : 'Production Published', channel, undefined, result.messageLink);
+      showToast(channel === 'Test' ? 'Тестовая публикация отправлена' : 'Production публикация отправлена');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Backend endpoint not connected';
+      recordPublication('Error', channel, message);
+      showToast('Telegram endpoint недоступен. Запись добавлена в историю.', 'warning');
+    }
+  }
+
+  function publishTelegram() {
+    if (publishingMode === 'Production') {
+      setConfirmProductionOpen(true);
+      return;
+    }
+    if (publishingMode === 'Test') {
+      void publishViaBackend('Test');
+      return;
+    }
+    recordPublication('Copied', 'Demo');
+    showToast('Demo Mode: пост готов к ручной публикации');
   }
 
   return (
@@ -2025,11 +2850,11 @@ function PostPreviewPage() {
                 ))}
               </select>
             </label>
-            <label>
-              Язык
-              <select value={language} onChange={(event) => setLanguage(event.target.value as PostLanguage)}>
-                <option>EN</option>
-                <option>RU</option>
+              <label>
+                Язык
+                <select value={language} onChange={(event) => setLanguage(event.target.value as PostLanguage)}>
+                  <option>EN</option>
+                  <option>RU</option>
               </select>
             </label>
             <label>
@@ -2038,6 +2863,14 @@ function PostPreviewPage() {
                 {dealTypes.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
+              </select>
+            </label>
+            <label>
+              Режим публикации
+              <select value={publishingMode} onChange={(event) => setPublishingMode(event.target.value as BrandSettings['publishingMode'])}>
+                <option>Demo</option>
+                <option>Test</option>
+                <option>Production</option>
               </select>
             </label>
           </div>
@@ -2058,9 +2891,13 @@ function PostPreviewPage() {
                   <Copy size={18} />
                   Скопировать фото и текст вручную
                 </button>
-                <button className="secondaryButton dangerText" onClick={publishDemo} type="button">
+                <button className="secondaryButton" onClick={copyHashtags} type="button">
+                  <Sparkles size={18} />
+                  Скопировать хэштеги
+                </button>
+                <button className="secondaryButton dangerText" onClick={publishTelegram} type="button">
                   <MessageCircle size={18} />
-                  Опубликовать в Telegram
+                  {publishingMode === 'Production' ? 'Production publish' : publishingMode === 'Test' ? 'Test publish' : 'Demo publish'}
                 </button>
               </div>
             </>
@@ -2071,6 +2908,17 @@ function PostPreviewPage() {
 
         <PhonePreview copied={copied} postText={postText} property={selectedProperty} />
       </section>
+      <ConfirmDialog
+        confirmLabel="Опубликовать"
+        isOpen={confirmProductionOpen}
+        title="Production публикация?"
+        text="Пост будет отправлен в production-канал Rent in Tbilisi, если backend endpoint подключен."
+        onCancel={() => setConfirmProductionOpen(false)}
+        onConfirm={() => {
+          setConfirmProductionOpen(false);
+          void publishViaBackend('Production');
+        }}
+      />
     </PageFrame>
   );
 }
@@ -2095,6 +2943,8 @@ function PhonePreview({ copied, postText, property }: { copied: boolean; postTex
 
 function TelegramPage() {
   const { brandSettings, publications } = useCrm();
+  const activeChannel =
+    brandSettings.publishingMode === 'Production' ? brandSettings.productionChannelId : brandSettings.testChannelId;
   return (
     <PageFrame
       actions={
@@ -2107,14 +2957,16 @@ function TelegramPage() {
       <section className="workspace">
         <div className="sectionHeader">
           <div>
-            <h2>Demo Mode</h2>
-            <p>Backend для реальной отправки пока не подключен. Используйте копирование текста и ручную публикацию.</p>
+            <h2>Telegram Center</h2>
+            <p>Demo безопасен для ручной публикации. Test и Production пишут результат endpoint в историю.</p>
           </div>
-          <span className="status status-на-рекламе">{brandSettings.telegramChannelId || 'Demo channel'}</span>
+          <span className="status status-on-advertising">{brandSettings.publishingMode}: {activeChannel}</span>
         </div>
         <div className="telegramModes">
-          <InfoItem label="Режим 1" value="Demo Mode: копирование поста, фото и ручное открытие Telegram" />
-          <InfoItem label="Режим 2" value="Backend Mode: POST /api/telegram/publish через серверный endpoint" />
+          <InfoItem label="Demo" value="Копирование текста, фото и ручное открытие Telegram" />
+          <InfoItem label="Test endpoint" value="POST /api/telegram/publish-test" />
+          <InfoItem label="Production endpoint" value="POST /api/telegram/publish-production с подтверждением" />
+          <InfoItem label="Production channel" value={brandSettings.productionChannelId} />
         </div>
       </section>
       <PublicationHistory publications={publications} />
@@ -2140,9 +2992,12 @@ function PublicationHistory({ publications }: { publications: Publication[] }) {
               <tr>
                 <th>Дата</th>
                 <th>Объект</th>
+                <th>Автор</th>
                 <th>Канал</th>
                 <th>Статус</th>
+                <th>Фото</th>
                 <th>Текст</th>
+                <th>Ошибка / ссылка</th>
               </tr>
             </thead>
             <tbody>
@@ -2150,10 +3005,23 @@ function PublicationHistory({ publications }: { publications: Publication[] }) {
                 <tr key={publication.id}>
                   <td>{new Date(publication.date).toLocaleString('ru-RU')}</td>
                   <td>{publication.propertyTitle}</td>
+                  <td>{publication.author}</td>
                   <td>{publication.channel}</td>
-                  <td>{publication.status}</td>
+                  <td>
+                    <span className={publicationStatusClassName(publication.status)}>{publication.status}</span>
+                  </td>
+                  <td>{publication.photosCount}</td>
                   <td>
                     <span>{publication.text.slice(0, 90)}...</span>
+                  </td>
+                  <td>
+                    {publication.messageLink ? (
+                      <a href={publication.messageLink} target="_blank" rel="noreferrer">
+                        Telegram link
+                      </a>
+                    ) : (
+                      publication.error || '-'
+                    )}
                   </td>
                 </tr>
               ))}
@@ -2336,6 +3204,207 @@ function DealsPage() {
   );
 }
 
+function AnalyticsPage() {
+  const { agents, deals, properties, publications } = useCrm();
+  const stats = getPropertyStats(properties);
+  const agentRows = agentAnalytics(agents, properties, deals, publications);
+  const monthCommission = deals
+    .filter((deal) => Date.parse(deal.date) >= Date.now() - 30 * 24 * 60 * 60 * 1000)
+    .reduce((sum, deal) => sum + safeNumber(deal.commission), 0);
+  const metrics = [
+    { label: 'Объекты всего', value: stats.total },
+    { label: 'Добавлено за неделю', value: stats.addedWeek },
+    { label: 'Добавлено за месяц', value: stats.addedMonth },
+    { label: 'Сдано за неделю', value: stats.rentedWeek },
+    { label: 'Сдано за месяц', value: stats.rentedMonth },
+    { label: 'Продано за месяц', value: stats.soldMonth },
+    { label: 'Реализовано за месяц', value: stats.realizedMonth },
+    { label: 'Конверсия', value: `${stats.conversionRate}%` },
+    { label: 'Публикации за неделю', value: thisWeekCount(publications) },
+    { label: 'Публикации за месяц', value: thisMonthCount(publications) },
+    { label: 'Комиссия за месяц', value: `${monthCommission}$` },
+    { label: 'Активные агенты', value: agents.filter((agent) => agent.isActive).length },
+  ];
+
+  return (
+    <PageFrame>
+      <section className="metrics dashboardMetrics">
+        {metrics.map((metric) => (
+          <article key={metric.label}>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+          </article>
+        ))}
+      </section>
+      <section className="workspace">
+        <div className="sectionHeader">
+          <div>
+            <h2>Статистика по агентам</h2>
+            <p>Объекты, сделки, эксклюзивы, публикации и конверсия по каждому члену команды.</p>
+          </div>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Агент</th>
+                <th>Роль</th>
+                <th>Объекты</th>
+                <th>Эксклюзивы</th>
+                <th>Сдано</th>
+                <th>Продано</th>
+                <th>Сделки</th>
+                <th>Комиссия</th>
+                <th>Конверсия</th>
+                <th>Активность 7/30</th>
+                <th>Публикации</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentRows.map((agent) => (
+                <tr key={agent.id}>
+                  <td>{agent.name}</td>
+                  <td>{agent.role}</td>
+                  <td>{agent.objects}</td>
+                  <td>{agent.exclusives}</td>
+                  <td>{agent.rented}</td>
+                  <td>{agent.sold}</td>
+                  <td>{agent.deals}</td>
+                  <td>{agent.commissionSum}$</td>
+                  <td>{agent.conversion}%</td>
+                  <td>{agent.weekActivity}/{agent.monthActivity}</td>
+                  <td>{agent.publications}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </PageFrame>
+  );
+}
+
+function DistrictsPage() {
+  const { properties } = useCrm();
+  const rows = districtAnalytics(properties);
+
+  return (
+    <PageFrame>
+      <section className="workspace">
+        <div className="sectionHeader">
+          <div>
+            <h2>Районы и цены</h2>
+            <p>Средние и медианные цены по районам, включая расчет за м².</p>
+          </div>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Район</th>
+                <th>Аренда</th>
+                <th>Средняя аренда</th>
+                <th>Медиана аренды</th>
+                <th>Мин / макс</th>
+                <th>Аренда / м²</th>
+                <th>1Bed / 2Bed / 3Bed</th>
+                <th>Продажа</th>
+                <th>Средняя продажа</th>
+                <th>Продажа / м²</th>
+                <th>Реализовано 30 дней</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.district}>
+                  <td>{row.district}</td>
+                  <td>{row.rentCount}</td>
+                  <td>{row.avgRent ? `${row.avgRent}$` : '-'}</td>
+                  <td>{row.medianRent ? `${row.medianRent}$` : '-'}</td>
+                  <td>{row.minRent ? `${row.minRent}$ / ${row.maxRent}$` : '-'}</td>
+                  <td>{row.avgRentM2 ? `${row.avgRentM2}$/м²` : '-'}</td>
+                  <td>{[row.avg1Bed, row.avg2Bed, row.avg3Bed].map((value) => (value ? `${value}$` : '-')).join(' / ')}</td>
+                  <td>{row.saleCount}</td>
+                  <td>{row.avgSale ? `${row.avgSale}$` : '-'}</td>
+                  <td>{row.avgSaleM2 ? `${row.avgSaleM2}$/м²` : '-'}</td>
+                  <td>{row.realizedMonth}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </PageFrame>
+  );
+}
+
+function PublicationsPage() {
+  const { publications } = useCrm();
+  const [channel, setChannel] = useState<Publication['channel'] | 'Все каналы'>('Все каналы');
+  const [status, setStatus] = useState<PublicationStatus | 'Все статусы'>('Все статусы');
+  const filtered = publications.filter((publication) => {
+    const matchesChannel = channel === 'Все каналы' || publication.channel === channel;
+    const matchesStatus = status === 'Все статусы' || publication.status === status;
+    return matchesChannel && matchesStatus;
+  });
+
+  return (
+    <PageFrame>
+      <section className="metrics compactMetrics">
+        <article>
+          <span>Всего</span>
+          <strong>{publications.length}</strong>
+        </article>
+        <article>
+          <span>За неделю</span>
+          <strong>{thisWeekCount(publications)}</strong>
+        </article>
+        <article>
+          <span>За месяц</span>
+          <strong>{thisMonthCount(publications)}</strong>
+        </article>
+        <article>
+          <span>Production</span>
+          <strong>{publications.filter((publication) => publication.channel === 'Production').length}</strong>
+        </article>
+        <article>
+          <span>Ошибки</span>
+          <strong>{publications.filter((publication) => publication.status === 'Error').length}</strong>
+        </article>
+        <article>
+          <span>Скопировано</span>
+          <strong>{publications.filter((publication) => publication.status === 'Copied').length}</strong>
+        </article>
+      </section>
+      <section className="workspace">
+        <div className="filtersPanel slimFilters">
+          <label>
+            Канал
+            <select value={channel} onChange={(event) => setChannel(event.target.value as Publication['channel'] | 'Все каналы')}>
+              <option>Все каналы</option>
+              <option>Demo</option>
+              <option>Test</option>
+              <option>Production</option>
+            </select>
+          </label>
+          <label>
+            Статус
+            <select value={status} onChange={(event) => setStatus(event.target.value as PublicationStatus | 'Все статусы')}>
+              <option>Все статусы</option>
+              <option>Draft</option>
+              <option>Copied</option>
+              <option>Test Published</option>
+              <option>Production Published</option>
+              <option>Error</option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <PublicationHistory publications={filtered} />
+    </PageFrame>
+  );
+}
+
 function EntityTable({ columns, rows, title }: { columns: string[]; rows: string[][]; title: string }) {
   return (
     <PageFrame>
@@ -2391,36 +3460,78 @@ function SettingsPage() {
         <div className="sectionHeader">
           <div>
             <h2>Настройки бренда и Telegram</h2>
-            <p>Для production Bot Token должен храниться только на backend, не во фронтенде.</p>
+            <p>Фронтенд хранит только бренд, каналы и шаблон. Bot Token должен оставаться на backend.</p>
           </div>
         </div>
         <div className="formGrid">
-          <label className="wideField">
-            Telegram Bot Token
+          <label>
+            Название бренда
+            <input value={form.brandName} onChange={(event) => setForm((current) => ({ ...current, brandName: event.target.value }))} />
+          </label>
+          <label>
+            Telegram username
             <input
-              placeholder="Хранить только на backend"
-              value={form.telegramBotToken}
-              onChange={(event) => setForm((current) => ({ ...current, telegramBotToken: event.target.value }))}
+              value={form.telegramUsername}
+              onChange={(event) => setForm((current) => ({ ...current, telegramUsername: event.target.value }))}
             />
           </label>
           <label>
-            Telegram Channel ID
+            Test channel
+            <input value={form.testChannelId} onChange={(event) => setForm((current) => ({ ...current, testChannelId: event.target.value }))} />
+          </label>
+          <label>
+            Production channel
             <input
-              value={form.telegramChannelId}
-              onChange={(event) => setForm((current) => ({ ...current, telegramChannelId: event.target.value }))}
+              value={form.productionChannelId}
+              onChange={(event) => setForm((current) => ({ ...current, productionChannelId: event.target.value }))}
             />
           </label>
           <label>
-            Основной контакт
-            <input value={form.mainContact} onChange={(event) => setForm((current) => ({ ...current, mainContact: event.target.value }))} />
+            Режим публикации
+            <select
+              value={form.publishingMode}
+              onChange={(event) => setForm((current) => ({ ...current, publishingMode: event.target.value as BrandSettings['publishingMode'] }))}
+            >
+              <option>Demo</option>
+              <option>Test</option>
+              <option>Production</option>
+            </select>
+          </label>
+          <label>
+            Язык поста
+            <select
+              value={form.defaultLanguage}
+              onChange={(event) => setForm((current) => ({ ...current, defaultLanguage: event.target.value as PostLanguage }))}
+            >
+              <option>EN</option>
+              <option>RU</option>
+            </select>
+          </label>
+          <label>
+            Валюта по умолчанию
+            <select
+              value={form.defaultCurrency}
+              onChange={(event) => setForm((current) => ({ ...current, defaultCurrency: event.target.value as Currency }))}
+            >
+              {currencies.map((currency) => (
+                <option key={currency}>{currency}</option>
+              ))}
+            </select>
           </label>
           <label>
             Телефон
             <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
           </label>
           <label>
-            Подпись агента
-            <input value={form.agentSignature} onChange={(event) => setForm((current) => ({ ...current, agentSignature: event.target.value }))} />
+            Основной контакт
+            <input value={form.mainContact} onChange={(event) => setForm((current) => ({ ...current, mainContact: event.target.value }))} />
+          </label>
+          <label>
+            Подпись в посте
+            <input
+              value={form.defaultSignature}
+              onChange={(event) => setForm((current) => ({ ...current, defaultSignature: event.target.value }))}
+            />
           </label>
           <label>
             Подпись оператора
@@ -2429,10 +3540,25 @@ function SettingsPage() {
               onChange={(event) => setForm((current) => ({ ...current, operatorSignature: event.target.value }))}
             />
           </label>
+          <ToggleField
+            label="Показывать 0% Commission"
+            checked={form.includeZeroCommission}
+            onChange={(value) => setForm((current) => ({ ...current, includeZeroCommission: value }))}
+          />
+          <ToggleField
+            label="Показывать APARTMENTS ON MAP"
+            checked={form.includeMapBlock}
+            onChange={(value) => setForm((current) => ({ ...current, includeMapBlock: value }))}
+          />
+          <ToggleField
+            label="Блок отзывов"
+            checked={form.includeReviewsBlock}
+            onChange={(value) => setForm((current) => ({ ...current, includeReviewsBlock: value }))}
+          />
         </div>
         <div className="settingsNotice">
           <ShieldCheck size={18} />
-          <span>Backend Mode ожидает endpoint POST /api/telegram/publish и переменные TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL_ID.</span>
+          <span>Production ожидает POST /api/telegram/publish-production, Test ожидает POST /api/telegram/publish-test.</span>
         </div>
         <div className="formActions">
           <button className="primaryButton" type="submit">
@@ -2480,12 +3606,14 @@ function NotFoundPanel({ backTo, title }: { backTo: string; title: string }) {
 }
 
 function ConfirmDialog({
+  confirmLabel = 'Удалить',
   isOpen,
   onCancel,
   onConfirm,
   text,
   title,
 }: {
+  confirmLabel?: string;
   isOpen: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -2506,7 +3634,7 @@ function ConfirmDialog({
             Отмена
           </button>
           <button className="primaryButton dangerButton" onClick={onConfirm} type="button">
-            Удалить
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -2516,8 +3644,12 @@ function ConfirmDialog({
 
 async function copyText(text: string) {
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Some embedded browsers expose the Clipboard API but reject writeText without focus.
+    }
   }
   const textarea = document.createElement('textarea');
   textarea.value = text;

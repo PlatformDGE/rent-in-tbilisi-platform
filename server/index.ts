@@ -1,38 +1,71 @@
-import express from 'express';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
-const app = express();
+type PublishPayload = {
+  objectId?: string;
+  photos?: string[];
+  text?: string;
+};
 
-app.use(express.json({ limit: '20mb' }));
-
-app.post('/api/telegram/publish', async (req, res) => {
-  const { objectId, photos, text } = req.body as {
-    objectId?: string;
-    photos?: string[];
-    text?: string;
-  };
-
-  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHANNEL_ID) {
-    return res.status(501).json({
-      message: 'Telegram backend пока не подключен',
-      objectId,
+function readJsonBody(request: IncomingMessage) {
+  return new Promise<PublishPayload>((resolve, reject) => {
+    let raw = '';
+    request.on('data', (chunk) => {
+      raw += chunk;
+      if (raw.length > 20 * 1024 * 1024) reject(new Error('Payload too large'));
     });
-  }
-
-  if (!text || !objectId) {
-    return res.status(400).json({ message: 'text and objectId are required' });
-  }
-
-  // Production implementation:
-  // 1. Upload photos with sendMediaGroup when photos are present.
-  // 2. Send text caption/message to TELEGRAM_CHANNEL_ID.
-  // 3. Store Telegram message ids in a database.
-  return res.json({
-    message: 'Prepared for Telegram publishing',
-    objectId,
-    photosCount: photos?.length || 0,
+    request.on('end', () => {
+      try {
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch {
+        reject(new Error('Invalid JSON'));
+      }
+    });
+    request.on('error', reject);
   });
+}
+
+function sendJson(response: ServerResponse, status: number, data: unknown) {
+  response.writeHead(status, { 'Content-Type': 'application/json' });
+  response.end(JSON.stringify(data));
+}
+
+const server = createServer(async (request, response) => {
+  if (request.method !== 'POST') {
+    sendJson(response, 404, { message: 'Not found' });
+    return;
+  }
+
+  if (request.url !== '/api/telegram/publish-test' && request.url !== '/api/telegram/publish-production') {
+    sendJson(response, 404, { message: 'Not found' });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(request);
+    if (!body.objectId || !body.text) {
+      sendJson(response, 400, { message: 'objectId and text are required' });
+      return;
+    }
+
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      sendJson(response, 501, {
+        message: 'Telegram backend is not connected',
+        objectId: body.objectId,
+        photosCount: body.photos?.length || 0,
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      message: request.url.includes('production') ? 'Production publish prepared' : 'Test publish prepared',
+      objectId: body.objectId,
+      photosCount: body.photos?.length || 0,
+    });
+  } catch (error) {
+    sendJson(response, 400, { message: error instanceof Error ? error.message : 'Bad request' });
+  }
 });
 
-app.listen(3001, () => {
+server.listen(3001, () => {
   console.log('Telegram backend example listening on http://127.0.0.1:3001');
 });

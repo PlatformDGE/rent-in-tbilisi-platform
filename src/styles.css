@@ -1,18 +1,18 @@
 :root {
-  --accent: #d7b56d;
-  --accent-strong: #b8954c;
-  --bg: #f6f8f6;
+  --accent: #e32227;
+  --accent-strong: #b31318;
+  --bg: #f7f9fc;
   --border: #e5e7eb;
   --card: #ffffff;
-  --card-muted: #f4f8f6;
-  --danger: #c2410c;
-  --fg: #10231c;
-  --green: #1e7f5c;
-  --green-dark: #0f3d2e;
-  --green-soft: #eaf6f1;
+  --card-muted: #f2f6fb;
+  --danger: #e32227;
+  --fg: #0f172a;
+  --green: #0b3a75;
+  --green-dark: #062b55;
+  --green-soft: #e9f1fb;
   --muted: #6b7280;
   --muted-2: #9ca3af;
-  --shadow: 0 18px 48px rgba(15, 61, 46, 0.09);
+  --shadow: 0 18px 48px rgba(6, 43, 85, 0.09);
   --success: #15803d;
   --warning: #b45309;
   color: var(--fg);
@@ -24,19 +24,19 @@
 }
 
 :root[data-theme='dark'] {
-  --accent: #dfc07a;
-  --accent-strong: #f2d78e;
-  --bg: #07130f;
-  --border: #20382f;
-  --card: #0d1d17;
-  --card-muted: #122820;
-  --danger: #fb923c;
-  --fg: #eef8f3;
-  --green: #52c096;
-  --green-dark: #c8f3df;
-  --green-soft: #143328;
-  --muted: #a7b6ae;
-  --muted-2: #728178;
+  --accent: #ff4d52;
+  --accent-strong: #ff7a7e;
+  --bg: #07111d;
+  --border: #1d314b;
+  --card: #0d1b2c;
+  --card-muted: #13243a;
+  --danger: #ff6b70;
+  --fg: #eef5ff;
+  --green: #6ea8ff;
+  --green-dark: #d4e6ff;
+  --green-soft: #142844;
+  --muted: #a8b6ca;
+  --muted-2: #718098;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
   --success: #86efac;
   --warning: #facc15;
@@ -51,8 +51,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 20% 0%, rgba(30, 127, 92, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(234, 246, 241, 0.55), transparent 360px),
+    linear-gradient(180deg, rgba(11, 58, 117, 0.06), transparent 360px),
     var(--bg);
 }
 
@@ -123,7 +122,7 @@ p {
 
 .logoMark {
   align-items: center;
-  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  background: var(--green-dark);
   border-radius: 8px;
   color: #ffffff;
   display: inline-flex;
@@ -412,7 +411,7 @@ p {
 .metrics {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .compactMetrics {
@@ -469,7 +468,11 @@ p {
 }
 
 .previewFilters {
-  grid-template-columns: minmax(260px, 1.4fr) minmax(110px, 0.4fr) minmax(160px, 0.5fr);
+  grid-template-columns: minmax(260px, 1.4fr) minmax(100px, 0.35fr) repeat(2, minmax(150px, 0.5fr));
+}
+
+.slimFilters {
+  grid-template-columns: repeat(2, minmax(180px, 260px));
 }
 
 label {
@@ -656,7 +659,7 @@ textarea:focus {
 .propertyFacts {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 14px;
 }
 
@@ -725,49 +728,69 @@ td span {
   white-space: nowrap;
 }
 
-.status-новый {
+.status-new,
+.status-draft {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
-.status-в-работе {
+.status-in-progress,
+.status-reserved {
   background: #fff7ed;
   color: #9a3412;
 }
 
-.status-на-рекламе {
+.status-on-advertising,
+.status-copied {
   background: var(--green-soft);
   color: var(--green-dark);
 }
 
-.status-сдан,
-.status-продан,
+.status-rented,
+.status-sold,
+.status-test-published,
+.status-production-published,
 .agentState.active {
   background: #dcfce7;
   color: #166534;
 }
 
-.status-архив,
+.status-archived,
+.status-error,
 .agentState {
   background: var(--card-muted);
   color: var(--muted);
 }
 
-:root[data-theme='dark'] .status-новый {
+.status-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+:root[data-theme='dark'] .status-new,
+:root[data-theme='dark'] .status-draft {
   background: #172554;
   color: #bfdbfe;
 }
 
-:root[data-theme='dark'] .status-в-работе {
+:root[data-theme='dark'] .status-in-progress,
+:root[data-theme='dark'] .status-reserved {
   background: #431407;
   color: #fed7aa;
 }
 
-:root[data-theme='dark'] .status-сдан,
-:root[data-theme='dark'] .status-продан,
+:root[data-theme='dark'] .status-rented,
+:root[data-theme='dark'] .status-sold,
+:root[data-theme='dark'] .status-test-published,
+:root[data-theme='dark'] .status-production-published,
 :root[data-theme='dark'] .agentState.active {
   background: #052e16;
   color: #bbf7d0;
+}
+
+:root[data-theme='dark'] .status-error {
+  background: #450a0a;
+  color: #fecaca;
 }
 
 .detailLayout {

@@ -27,6 +27,7 @@ npm run build
 - Dashboard с операционными показателями
 - Премиальный Molecula header и левое меню
 - Полная карточка объекта для аренды/продажи
+- Фильтры по району, типу сделки, статусу и поиск по адресу
 - Загрузка нескольких фото в `localStorage` как base64
 - Добавление фото ссылками
 - Галерея объекта и выбор главного фото
@@ -36,9 +37,11 @@ npm run build
 - Предпросмотр Telegram-поста в виде телефона
 - Кнопка `Скопировано` после копирования
 - История публикаций в `localStorage`
-- Страница Telegram Demo Mode
+- Строгий Telegram-шаблон Rent in Tbilisi с whitelisted hashtags
+- Страницы `Аналитика`, `Районы и цены`, `Публикации`
+- Статистика за неделю, месяц и по агентам
+- Страница Telegram Demo/Test/Production workflow
 - Страница настроек бренда
-- Заготовка backend endpoint в `server/index.ts`
 
 ## Как пользоваться
 
@@ -50,59 +53,42 @@ npm run build
 6. Сохраните объект.
 7. Откройте `Предпросмотр поста`.
 8. Выберите объект, язык и тип шаблона.
-9. Скопируйте пост или сохраните его в историю.
+9. Скопируйте пост, хэштеги или сохраните его в историю.
 
-## Telegram Demo Mode
+## Telegram
 
-Сейчас публикация работает в безопасном demo-режиме:
+CRM генерирует посты в формате Rent in Tbilisi:
 
-- `Скопировать пост`
-- `Открыть Telegram`
-- `Скопировать фото и текст вручную`
-- `Опубликовать в Telegram` показывает сообщение, что backend пока не подключен
+```text
+#Saburtalo 🚇 #MCUniversity
+📍14b Shalva Nutsubidze Street
+
+❗️#Exclusive
+
+🏢 #2Bed #Apartment for #Rent
+✨ #NewBuilding | #White
+🏠105 sq.m | 5/12 Floor |
+#CentralHeating | #Shower
+```
+
+Доступные режимы:
+
+- `Demo`: подготовка, копирование и ручная публикация
+- `Test`: попытка отправки в `POST /api/telegram/publish-test`
+- `Production`: подтверждение и попытка отправки в `POST /api/telegram/publish-production`
 
 История публикаций хранит:
 
 - объект
 - дату
+- автора
 - канал
 - статус
 - текст поста
+- количество фото
+- ошибку или ссылку на сообщение, если backend вернул ее
 
-## Backend Mode
-
-Для настоящей отправки в Telegram нужен backend.
-
-Пример endpoint подготовлен в:
-
-```bash
-server/index.ts
-```
-
-Endpoint:
-
-```http
-POST /api/telegram/publish
-```
-
-Body:
-
-```json
-{
-  "objectId": "RIT-1001",
-  "text": "Telegram post text",
-  "photos": ["https://..."]
-}
-```
-
-Production-переменные окружения:
-
-```bash
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHANNEL_ID=
-```
-
-Важно: `TELEGRAM_BOT_TOKEN` нельзя хранить во фронтенде в production.
+Важно: `TELEGRAM_BOT_TOKEN` нельзя хранить во фронтенде. Production-отправку нужно подключать через backend.
 
 ## Следующие шаги
 
