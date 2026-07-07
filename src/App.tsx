@@ -629,7 +629,6 @@ function DashboardPage() {
 function DashboardContent() {
   const { agents, properties } = useCrm();
   const stats = getPropertyStats(properties);
-  const activeAgents = agents.filter((agent) => agent.isActive).length;
   const recentDeals = properties
     .filter((property) => property.status === 'Сдан' || property.status === 'Продан')
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
@@ -638,7 +637,7 @@ function DashboardContent() {
   const dashboardCards = [
     { label: 'Объекты', value: properties.length, icon: Building2, to: '/properties' },
     { label: 'Сделки', value: getDealCount(properties), icon: Handshake, to: '/deals' },
-    { label: 'Агенты', value: activeAgents, icon: UsersRound, to: '/agents' },
+    { label: 'Агенты', value: agents.length, icon: UsersRound, to: '/agents' },
     { label: 'Собственники', value: new Set(properties.map((property) => property.owner).filter(Boolean)).size, icon: Home, to: '/owners' },
     { label: 'Клиенты', value: stats.inWork + stats.rented + stats.sold, icon: UserRound, to: '/clients' },
   ];
