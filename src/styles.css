@@ -1,0 +1,495 @@
+:root {
+  color: #172033;
+  background: #f5f7fb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(236, 241, 248, 0.85), rgba(255, 255, 255, 0) 360px),
+    #f7f9fc;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: #2667c9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.appShell {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e7ebf2;
+  padding: 24px 18px;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brandMark {
+  align-items: center;
+  background: #172033;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 800;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand strong {
+  font-size: 16px;
+}
+
+.brand span {
+  color: #697489;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.navigation {
+  display: grid;
+  gap: 6px;
+}
+
+.navButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #526078;
+  display: flex;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  text-align: left;
+}
+
+.navButton:hover,
+.navButton.active {
+  background: #eef4ff;
+  color: #194b94;
+}
+
+.content {
+  min-width: 0;
+  padding: 28px;
+}
+
+.topbar {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  color: #68758a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 34px;
+  line-height: 1.1;
+  margin-bottom: 0;
+}
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+h3 {
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.primaryButton,
+.secondaryButton {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+}
+
+.primaryButton {
+  background: #1f6feb;
+  border: 1px solid #1f6feb;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  background: #ffffff;
+  border: 1px solid #d8dee9;
+  color: #344058;
+}
+
+.metrics {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.metrics article,
+.workspace,
+.placeholder,
+.propertyForm {
+  background: #ffffff;
+  border: 1px solid #e4e9f1;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(20, 37, 63, 0.06);
+}
+
+.metrics article {
+  padding: 18px;
+}
+
+.metrics span {
+  color: #68758a;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.metrics strong {
+  font-size: 28px;
+}
+
+.workspace,
+.placeholder {
+  padding: 22px;
+}
+
+.sectionHeader {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionHeader p,
+.placeholder p {
+  color: #68758a;
+  margin-bottom: 0;
+}
+
+.searchBox {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  display: flex;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  width: min(100%, 280px);
+}
+
+.searchBox input {
+  background: transparent;
+  border: 0;
+  color: #172033;
+  min-width: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.propertyForm {
+  box-shadow: none;
+  margin-bottom: 18px;
+  padding: 18px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.formGrid label {
+  color: #526078;
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 7px;
+}
+
+.formGrid input,
+.formGrid select,
+.formGrid textarea {
+  background: #ffffff;
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  color: #172033;
+  min-height: 42px;
+  outline: 0;
+  padding: 9px 11px;
+  width: 100%;
+}
+
+.formGrid textarea {
+  resize: vertical;
+}
+
+.wideField {
+  grid-column: span 2;
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.propertyCards {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.propertyCard {
+  border: 1px solid #e7ebf2;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.cardTopline {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cardTopline strong {
+  color: #172033;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.propertyCard h3 {
+  font-size: 17px;
+  line-height: 1.35;
+  margin-bottom: 14px;
+}
+
+.propertyCard dl {
+  display: grid;
+  gap: 10px 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 14px;
+}
+
+.propertyCard dt {
+  color: #778397;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.propertyCard dd {
+  color: #28354a;
+  font-size: 14px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.propertyCard p {
+  color: #68758a;
+  font-size: 14px;
+  line-height: 1.45;
+  margin-bottom: 0;
+}
+
+.tableWrap {
+  border: 1px solid #e7ebf2;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 1120px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #edf1f6;
+  padding: 13px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #fafcff;
+  color: #667287;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+td {
+  color: #2d394d;
+  font-size: 14px;
+}
+
+td strong,
+td span {
+  display: block;
+}
+
+td strong {
+  color: #172033;
+  margin-bottom: 4px;
+}
+
+td span {
+  color: #778397;
+  max-width: 280px;
+}
+
+.status {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+.status-новый {
+  background: #eaf2ff;
+  color: #1f5fbf;
+}
+
+.status-в-работе {
+  background: #fff6db;
+  color: #8b5d00;
+}
+
+.status-сдан,
+.status-продан {
+  background: #e7f8ef;
+  color: #167344;
+}
+
+.status-архив {
+  background: #eef1f5;
+  color: #5b6678;
+}
+
+@media (max-width: 980px) {
+  .appShell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-bottom: 1px solid #e7ebf2;
+    border-right: 0;
+  }
+
+  .navigation {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .navButton {
+    white-space: nowrap;
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  .metrics,
+  .formGrid,
+  .propertyCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar,
+  .sectionHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .searchBox {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .metrics,
+  .formGrid,
+  .propertyCards,
+  .propertyCard dl {
+    grid-template-columns: 1fr;
+  }
+
+  .wideField {
+    grid-column: auto;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+}
