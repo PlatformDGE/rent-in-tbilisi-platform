@@ -1,6 +1,10 @@
-# Molecula CRM / Rent in Tbilisi
+# Molecula ERP / Rent in Tbilisi
 
-Практичный локальный прототип CRM для агентства недвижимости Rent in Tbilisi / Molecula.
+Локальный прототип постепенно перестраивается в ERP-платформу агентства недвижимости Rent in Tbilisi / Molecula.
+
+Цель системы: не просто хранить объекты, а управлять полным циклом агентства:
+
+`собственник -> объект -> медиа -> публикация -> лид -> клиент -> просмотр -> сделка -> комиссия -> аналитика -> история`.
 
 ## Запуск
 
@@ -23,6 +27,9 @@ npm run build
 
 ## Что добавлено
 
+- Первый архитектурный refactor: доменная логика вынесена из `App.tsx` в `src/domain`
+- Backend-first scaffold: Prisma schema, OpenAPI contract, backend README
+- Новый блок `Рабочий день агента` на Dashboard
 - Локальный вход без сервера
 - Dashboard с операционными показателями
 - Премиальный Molecula header и левое меню
@@ -49,6 +56,33 @@ npm run build
 - Страница Telegram Demo/Test/Production workflow
 - Страница настроек бренда
 - Светлая и темная тема
+
+## Архитектура
+
+Текущая структура:
+
+```text
+src/App.tsx                    UI, routing, page composition
+src/domain/types.ts            основные сущности
+src/domain/constants.ts        справочники и demo defaults
+src/domain/demoData.ts         demo seed data
+src/domain/demoRepository.ts   localStorage adapter для Demo режима
+src/domain/normalizers.ts      нормализация входных данных
+src/domain/analytics.ts        KPI, районная и агентская аналитика
+src/domain/telegram.ts         Telegram post engine
+src/domain/importers.ts        Telegram/CSV parser
+src/domain/agentWorkday.ts     персональные задачи агента
+server/prisma/schema.prisma    будущая PostgreSQL модель
+server/openapi/molecula-api.yaml REST API контракт
+docs/architecture/platform-blueprint.md ERP blueprint
+```
+
+Правило развития:
+
+- frontend показывает workflows;
+- backend должен владеть бизнес-логикой;
+- `localStorage` остается только Demo режимом;
+- реальные Telegram token, Google credentials, JWT secret и database credentials не должны попадать во frontend.
 
 ## Как пользоваться
 
@@ -113,6 +147,13 @@ CRM генерирует посты в формате Rent in Tbilisi:
 TELEGRAM_BOT_TOKEN=...
 ```
 
+Целевая backend-архитектура описана в:
+
+- `server/prisma/schema.prisma`
+- `server/openapi/molecula-api.yaml`
+- `server/README.md`
+- `docs/architecture/platform-blueprint.md`
+
 ## Import
 
 Страница `Импорт` умеет:
@@ -127,3 +168,26 @@ TELEGRAM_BOT_TOKEN=...
 - frontend не может читать личные сообщения Telegram;
 - Google Sheets credentials нельзя хранить во frontend;
 - большие видео-файлы должны уходить в backend storage, не в `localStorage`.
+
+## Telegram import truth
+
+Через Telegram Bot API нельзя:
+
+- читать личные сообщения рабочего аккаунта;
+- читать историю существующего канала;
+- парсить старую переписку аккаунта.
+
+Архитектура предусматривает три честных варианта:
+
+1. Telegram export import: ручной экспорт из Telegram Desktop, затем backend parser.
+2. Telegram Client API / Telethon: отдельный migration tool с доступом через MTProto.
+3. Собственный Telegram bot: принимает только новые обращения после подключения.
+
+## Следующие этапы
+
+1. Разбить UI-страницы по `src/modules/*`.
+2. Подключить Express + Prisma + PostgreSQL.
+3. Перевести `demoRepository` на API client.
+4. Добавить Owner, Client, Lead, Deal cards как отдельные сущности.
+5. Добавить ActionLog на каждое изменение.
+6. Сделать BI Dashboard вместо таблиц.

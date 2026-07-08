@@ -430,6 +430,59 @@ p {
   max-width: 680px;
 }
 
+.workdayGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.workdayTask {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  min-height: 132px;
+  padding: 15px;
+}
+
+.workdayTask:hover {
+  border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+}
+
+.workdayTask span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.workdayTask strong {
+  color: var(--fg);
+  font-size: 28px;
+}
+
+.workdayTask small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workday-danger {
+  border-left: 4px solid var(--danger);
+}
+
+.workday-warning {
+  border-left: 4px solid var(--warning);
+}
+
+.workday-success {
+  border-left: 4px solid var(--success);
+}
+
+.workday-info {
+  border-left: 4px solid var(--green);
+}
+
 .metrics {
   display: grid;
   gap: 12px;
@@ -1489,6 +1542,7 @@ td span {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .workdayGrid,
   .propertyCards,
   .agentGrid,
   .districtCards {
@@ -1579,6 +1633,7 @@ td span {
 
   .metrics,
   .compactMetrics,
+  .workdayGrid,
   .propertyCards,
   .agentGrid,
   .districtCards,

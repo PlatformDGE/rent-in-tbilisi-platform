@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  AGENT
+}
+
+enum PropertyStatus {
+  NEW
+  IN_PROGRESS
+  ON_ADVERTISING
+  RESERVED
+  RENTED
+  SOLD
+  ARCHIVED
+}
+
+enum DealType {
+  RENT
+  SALE
+  DAILY_RENT
+}
+
+enum LeadStatus {
+  NEW
+  WAITING
+  IN_PROGRESS
+  SHOWING
+  NEGOTIATION
+  CLOSED
+  LOST
+  SPAM
+}
+
+enum PublicationChannel {
+  DEMO
+  TEST
+  PRODUCTION
+  INSTAGRAM
+  FACEBOOK
+  MYHOME
+  SS_GE
+}
+
+enum PublicationStatus {
+  DRAFT
+  COPIED
+  TEST_PUBLISHED
+  PRODUCTION_PUBLISHED
+  ERROR
+}
+
+enum MediaKind {
+  PHOTO
+  VIDEO
+  DOCUMENT
+  FLOOR_PLAN
+  PDF
+  THREE_D
+  YOUTUBE
+}
+
+enum ImportSource {
+  TELEGRAM_EXPORT
+  TELEGRAM_CLIENT_API
+  TELEGRAM_BOT
+  GOOGLE_SHEETS
+  CSV
+  MANUAL
+}
+
+model User {
+  id           String      @id @default(cuid())
+  name         String
+  email        String?     @unique
+  passwordHash String?
+  role         Role
+  agent        Agent?
+  actionLogs   ActionLog[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Agent {
+  id                 String        @id @default(cuid())
+  userId             String?       @unique
+  user               User?         @relation(fields: [userId], references: [id])
+  name               String
+  telegram           String?
+  phone              String?
+  photoUrl           String?
+  teamRole           String
+  commissionPercent  Int           @default(50)
+  status             String        @default("active")
+  startDate          DateTime?
+  managerId          String?
+  manager            Agent?        @relation("AgentManager", fields: [managerId], references: [id])
+  team               Agent[]       @relation("AgentManager")
+  properties         Property[]    @relation("PropertyAgent")
+  operatedProperties Property[]    @relation("PropertyOperator")
+  deals              Deal[]
+  publications       Publication[]
+  leads              Lead[]
+  clients            Client[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model City {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  districts District[]
+  properties Property[]
+}
+
+model District {
+  id          String     @id @default(cuid())
+  cityId      String
+  city        City       @relation(fields: [cityId], references: [id])
+  name        String
+  metroTags   String[]
+  properties  Property[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([cityId, name])
+}
+
+model Owner {
+  id                 String      @id @default(cuid())
+  fullName           String
+  phone              String?
+  telegram           String?
+  whatsapp           String?
+  email              String?
+  language           String?
+  status             String      @default("active")
+  source             String?
+  firstContactAt     DateTime?
+  lastContactAt      DateTime?
+  notes              String?
+  exclusive          Boolean     @default(false)
+  trustManagement    Boolean     @default(false)
+  archived           Boolean     @default(false)
+  properties         Property[]
+  deals              Deal[]
+  communications     Communication[]
+  actionLogs         ActionLog[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model Client {
+  id                String      @id @default(cuid())
+  fullName          String
+  phone             String?
+  telegram          String?
+  whatsapp          String?
+  email             String?
+  citizenship       String?
+  language          String?
+  budgetMin         Int?
+  budgetMax         Int?
+  currency          String      @default("USD")
+  dealType          DealType?
+  districts         String[]
+  metros            String[]
+  pets              String?
+  rentalTerm        String?
+  peopleCount       Int?
+  children          Boolean     @default(false)
+  source            String?
+  status            String      @default("new")
+  responsibleAgentId String?
+  responsibleAgent  Agent?      @relation(fields: [responsibleAgentId], references: [id])
+  leads             Lead[]
+  viewings          Viewing[]
+  deals             Deal[]
+  communications    Communication[]
+  archived          Boolean     @default(false)
+  lostReason        String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  source      String
+  status      LeadStatus @default(NEW)
+  rawMessage  String?
+  phone       String?
+  telegram    String?
+  clientId    String?
+  client      Client?    @relation(fields: [clientId], references: [id])
+  agentId     String?
+  agent       Agent?     @relation(fields: [agentId], references: [id])
+  propertyId  String?
+  property    Property?  @relation(fields: [propertyId], references: [id])
+  lostReason  String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Property {
+  id                 String        @id @default(cuid())
+  publicCode         String        @unique
+  dealType           DealType
+  category           String
+  status             PropertyStatus @default(NEW)
+  cityId             String?
+  city               City?         @relation(fields: [cityId], references: [id])
+  districtId         String?
+  district           District?     @relation(fields: [districtId], references: [id])
+  metro              String?
+  address            String
+  mapLink            String?
+  cadastralCode      String?
+  building           String?
+  source             String?
+  titleRu            String?
+  titleEn            String?
+  descriptionRu      String?
+  descriptionEn      String?
+  price              Int?
+  currency           String        @default("USD")
+  area               Float?
+  bedrooms           Int?
+  rooms              Int?
+  floor              Int?
+  totalFloors        Int?
+  tenantsCount       String?
+  buildingType       String?
+  renovation         String?
+  heating            String?
+  amenities          String[]
+  petPolicy          String?
+  rentalTerm         String?
+  deposit            Int?
+  clientCommission   String        @default("0%")
+  ownerCommission    String?
+  taxIncluded        Boolean       @default(false)
+  exclusive          Boolean       @default(false)
+  internalNotes      String?
+  ownerId            String?
+  owner              Owner?        @relation(fields: [ownerId], references: [id])
+  agentId            String?
+  agent              Agent?        @relation("PropertyAgent", fields: [agentId], references: [id])
+  operatorId         String?
+  operator           Agent?        @relation("PropertyOperator", fields: [operatorId], references: [id])
+  media              MediaAsset[]
+  publications       Publication[]
+  deals              Deal[]
+  leads              Lead[]
+  viewings           Viewing[]
+  priceHistory       PriceHistory[]
+  commissionHistory  CommissionHistory[]
+  actionLogs         ActionLog[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model MediaAsset {
+  id          String    @id @default(cuid())
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+  kind        MediaKind
+  url         String
+  storageKey  String?
+  mimeType    String?
+  sizeBytes   Int?
+  sortOrder   Int       @default(0)
+  isMain      Boolean   @default(false)
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+}
+
+model Publication {
+  id             String             @id @default(cuid())
+  propertyId     String
+  property       Property           @relation(fields: [propertyId], references: [id])
+  authorId       String?
+  author         Agent?             @relation(fields: [authorId], references: [id])
+  channel        PublicationChannel
+  status         PublicationStatus
+  messageId      String?
+  messageLink    String?
+  text           String
+  photosCount    Int                @default(0)
+  videosCount    Int                @default(0)
+  error          String?
+  publishedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model Deal {
+  id                  String   @id @default(cuid())
+  dealType            DealType
+  propertyId          String
+  property            Property @relation(fields: [propertyId], references: [id])
+  ownerId             String?
+  owner               Owner?   @relation(fields: [ownerId], references: [id])
+  clientId            String?
+  client              Client?  @relation(fields: [clientId], references: [id])
+  agentId             String?
+  agent               Agent?   @relation(fields: [agentId], references: [id])
+  operatorId          String?
+  agencyCommission    Int?
+  agentPercent        Int?
+  agentAmount         Int?
+  operatorCommission  Int?
+  date                DateTime
+  paymentStatus       String
+  contractStatus      String
+  contractUrl         String?
+  files               Json?
+  notes               String?
+  commissions         Commission[]
+  actionLogs          ActionLog[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Commission {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id])
+  recipient   String
+  amount      Int
+  percent     Int?
+  status      String   @default("pending")
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model Viewing {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  agentId     String?
+  scheduledAt DateTime
+  status      String
+  feedback    String?
+  refusalReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Communication {
+  id        String   @id @default(cuid())
+  ownerId   String?
+  owner     Owner?   @relation(fields: [ownerId], references: [id])
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  channel   String
+  direction String
+  text      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model PriceHistory {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  oldPrice    Int?
+  newPrice    Int?
+  changedBy   String?
+  createdAt   DateTime @default(now())
+}
+
+model CommissionHistory {
+  id            String   @id @default(cuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id])
+  oldCommission String?
+  newCommission String?
+  changedBy     String?
+  createdAt     DateTime @default(now())
+}
+
+model ImportJob {
+  id          String       @id @default(cuid())
+  source      ImportSource
+  status      String
+  fileName    String?
+  rowsTotal   Int          @default(0)
+  rowsCreated Int          @default(0)
+  rowsFailed  Int          @default(0)
+  mapping     Json?
+  errors      Json?
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+  finishedAt  DateTime?
+}
+
+model ActionLog {
+  id          String    @id @default(cuid())
+  actorId     String?
+  actor       User?     @relation(fields: [actorId], references: [id])
+  entityType  String
+  entityId    String
+  action      String
+  oldValue    Json?
+  newValue    Json?
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+  ownerId     String?
+  owner       Owner?    @relation(fields: [ownerId], references: [id])
+  dealId      String?
+  deal        Deal?     @relation(fields: [dealId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

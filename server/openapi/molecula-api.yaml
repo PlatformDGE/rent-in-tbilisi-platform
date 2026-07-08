@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: Molecula ERP API
+  version: 0.1.0
+  description: Backend-first REST contract for Rent in Tbilisi / Molecula.
+servers:
+  - url: http://localhost:3001/api
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Agent Workday
+  - name: Properties
+  - name: Owners
+  - name: Clients
+  - name: Leads
+  - name: Deals
+  - name: Publications
+  - name: Media
+  - name: Imports
+  - name: Analytics
+  - name: Audit
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Create JWT session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT and user profile
+  /workday/me:
+    get:
+      tags: [Agent Workday]
+      summary: Personal daily dashboard for the current agent
+      responses:
+        '200':
+          description: Prioritized workday tasks and KPI
+  /properties:
+    get:
+      tags: [Properties]
+      summary: Paginated property list
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: districtId
+          in: query
+          schema:
+            type: string
+        - name: agentId
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Property page
+    post:
+      tags: [Properties]
+      summary: Create property
+      responses:
+        '201':
+          description: Created property
+  /properties/{id}:
+    get:
+      tags: [Properties]
+      summary: Full property card with relations
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Property card
+    patch:
+      tags: [Properties]
+      summary: Update property and write ActionLog
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Updated property
+  /properties/{id}/archive:
+    post:
+      tags: [Properties]
+      summary: Archive or restore property
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Status changed
+  /properties/{id}/clone:
+    post:
+      tags: [Properties]
+      summary: Create similar property draft
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '201':
+          description: Cloned property
+  /owners:
+    get:
+      tags: [Owners]
+      summary: Owner list with totals
+      responses:
+        '200':
+          description: Owner page
+    post:
+      tags: [Owners]
+      summary: Create owner
+      responses:
+        '201':
+          description: Created owner
+  /owners/{id}:
+    get:
+      tags: [Owners]
+      summary: Owner card with properties, deals, commissions and communication history
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Owner card
+  /clients:
+    get:
+      tags: [Clients]
+      summary: Client list
+      responses:
+        '200':
+          description: Client page
+    post:
+      tags: [Clients]
+      summary: Create client
+      responses:
+        '201':
+          description: Created client
+  /leads:
+    get:
+      tags: [Leads]
+      summary: Lead pipeline
+      responses:
+        '200':
+          description: Lead page
+    post:
+      tags: [Leads]
+      summary: Create lead from call, Telegram bot, import, or manual input
+      responses:
+        '201':
+          description: Created lead
+  /leads/{id}/qualify:
+    post:
+      tags: [Leads]
+      summary: Convert lead to client
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Lead converted
+  /deals:
+    get:
+      tags: [Deals]
+      summary: Deal list and commission filters
+      responses:
+        '200':
+          description: Deal page
+    post:
+      tags: [Deals]
+      summary: Create deal, update property status, analytics and agent stats
+      responses:
+        '201':
+          description: Created deal
+  /publications:
+    get:
+      tags: [Publications]
+      summary: Publication history across Telegram, Instagram, Facebook, MyHome and SS.ge
+      responses:
+        '200':
+          description: Publication page
+  /publications/telegram/demo:
+    post:
+      tags: [Publications]
+      summary: Save generated Telegram post as demo/copy history
+      responses:
+        '201':
+          description: Publication history item
+  /publications/telegram/test:
+    post:
+      tags: [Publications]
+      summary: Publish to test Telegram channel
+      responses:
+        '202':
+          description: Test publish accepted
+  /publications/telegram/production:
+    post:
+      tags: [Publications]
+      summary: Publish to production Telegram channel after frontend confirmation
+      responses:
+        '202':
+          description: Production publish accepted
+  /media/upload:
+    post:
+      tags: [Media]
+      summary: Upload media to storage adapter prepared for S3, Cloudflare R2, or Supabase Storage
+      responses:
+        '201':
+          description: Media asset created
+  /imports/telegram-export:
+    post:
+      tags: [Imports]
+      summary: Import posts from Telegram exported JSON/HTML
+      responses:
+        '202':
+          description: Import job created
+  /imports/google-sheets/preview:
+    post:
+      tags: [Imports]
+      summary: Preview Google Sheets column mapping
+      responses:
+        '200':
+          description: Import preview
+  /imports/google-sheets/run:
+    post:
+      tags: [Imports]
+      summary: Run Google Sheets import
+      responses:
+        '202':
+          description: Import job created
+  /analytics/bi:
+    get:
+      tags: [Analytics]
+      summary: BI dashboard metrics
+      responses:
+        '200':
+          description: Revenue, conversion, districts, agents, media, publication and price dynamics
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Action log
+      parameters:
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: entityId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Action log page
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
