@@ -6,6 +6,8 @@ import { AppLayout } from '../layouts/AppLayout';
 
 const DashboardPage = lazy(() => import('../modules/dashboard/DashboardPage'));
 const PropertiesPage = lazy(() => import('../modules/properties/PropertiesPage'));
+const PropertyFormPage = lazy(() => import('../modules/properties/PropertyFormPage'));
+const PropertyDetailPage = lazy(() => import('../modules/properties/PropertyDetailPage'));
 const OwnersPage = lazy(() => import('../modules/owners/OwnersPage'));
 const ClientsPage = lazy(() => import('../modules/clients/ClientsPage'));
 const ReportsPage = lazy(() => import('../modules/reports/ReportsPage'));
@@ -19,6 +21,9 @@ export const router = createBrowserRouter([{
   path: '/', element: <AppLayout />, errorElement: <RouteErrorScreen />, children: [
     { index: true, element: withLoading(<DashboardPage />) },
     { path: 'properties', element: withLoading(<PropertiesPage />) },
+    { path: 'properties/new', element: withLoading(<PropertyFormPage />) },
+    { path: 'properties/:propertyId', element: withLoading(<PropertyDetailPage />) },
+    { path: 'properties/:propertyId/edit', element: withLoading(<PropertyFormPage />) },
     { path: 'owners', element: withLoading(<OwnersPage />) },
     { path: 'clients', element: withLoading(<ClientsPage />) },
     { path: 'reports', element: withLoading(<ReportsPage />) },
