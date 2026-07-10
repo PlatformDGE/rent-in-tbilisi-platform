@@ -27,4 +27,4 @@ export const router = createBrowserRouter([{
     { path: 'telegram', element: withLoading(<TelegramPage />) },
     { path: 'settings', element: withLoading(<SettingsPage />) },
   ],
-}]);
+}], { basename: import.meta.env.BASE_URL });
