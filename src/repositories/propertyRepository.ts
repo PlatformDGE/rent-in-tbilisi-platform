@@ -1,47 +1,17 @@
-import type { Property } from '../domain/property';
-
-export interface PropertyRepository {
-  list(): Property[];
-  getById(id: string): Property | null;
-  save(property: Property): void;
-  findDuplicates(internalId: string, sourceUrl: string, excludeId?: string): Property[];
+import { EMPTY_AMENITIES, EMPTY_TELEGRAM_METADATA, type BedroomOption, type Property, type PropertyInput, type PropertyType } from '../domain/property';
+export interface PropertyRepository{list():Property[];getById(id:string):Property|null;save(property:Property):void;findDuplicates(internalId:string,sourceUrl:string,excludeId?:string):Property[]}
+type StorageSchema={version:2;properties:Property[]}; const KEY='rent-in-tbilisi:properties:v2'; const LEGACY_KEY='rent-in-tbilisi:properties:v1';
+export class PropertyStorageError extends Error{}
+type LegacyProperty=Record<string,unknown>&{id:string;internalId:string;address:string;district:string;price:number;createdAt:string;updatedAt:string};
+const bedroom=(value:unknown):BedroomOption=>{const n=Number(value);return n<=0?'Студия':n>=6?'6+':(['1','2','3','4','5'] as BedroomOption[]).includes(String(n) as BedroomOption)?String(n) as BedroomOption:'1'};
+const propertyType=(value:unknown):PropertyType=>value==='Дом'?'Дом':value==='Земельный участок'?'Земля':value==='Коммерческая недвижимость'?'Коммерция':'Квартира';
+const migrate=(old:LegacyProperty):Property=>({
+  id:old.id,dealType:'Аренда',exclusive:false,description:String(old.comment??''),district:old.district,metro:'',address:old.address,googleMapsUrl:'',propertyType:propertyType(old.propertyType),bedrooms:bedroom(old.bedrooms),buildingType:'',area:typeof old.area==='number'?old.area:null,floor:typeof old.floor==='number'?old.floor:null,totalFloors:typeof old.totalFloors==='number'?old.totalFloors:null,design:'',maxTenants:null,condition:'',bathrooms:null,heatingType:'',amenities:{...EMPTY_AMENITIES},pets:'По договорённости',price:old.price,deposit:old.price||null,priceRange:'',rentalTerm:'',salePriceRange:'',currency:(old.currency==='GEL'||old.currency==='EUR'?old.currency:'USD'),agent:String(old.agent??''),recruit:'',agentTelegram:'',agentPhone:'',ownerName:String(old.ownerName??''),ownerPhone:String(old.ownerPhone??''),cadastralNumber:String(old.cadastralNumber??''),comment:String(old.comment??''),exclusiveStatus:'',media:[],internalId:old.internalId,source:(['Сайт','Рекомендация','Звонок','Социальные сети','Другое'].includes(String(old.source))?old.source:'Другое') as PropertyInput['source'],sourceUrl:String(old.sourceUrl??''),status:old.status as Property['status'],createdAt:old.createdAt,updatedAt:old.updatedAt,history:Array.isArray(old.history)?old.history as Property['history']:[],telegramPublication:{...EMPTY_TELEGRAM_METADATA}
+});
+export class LocalStoragePropertyRepository implements PropertyRepository{
+  private read():StorageSchema{try{const current=localStorage.getItem(KEY);if(current){const data:unknown=JSON.parse(current);if(!data||typeof data!=='object'||!('version'in data)||!('properties'in data)||data.version!==2||!Array.isArray(data.properties))throw new Error();return data as StorageSchema;}const legacy=localStorage.getItem(LEGACY_KEY);if(!legacy)return{version:2,properties:[]};const parsed:unknown=JSON.parse(legacy);if(!parsed||typeof parsed!=='object'||!('properties'in parsed)||!Array.isArray(parsed.properties))throw new Error();const schema:StorageSchema={version:2,properties:(parsed.properties as LegacyProperty[]).map(migrate)};localStorage.setItem(KEY,JSON.stringify(schema));return schema;}catch{throw new PropertyStorageError('Локальные данные объектов повреждены. Очистите данные сайта или обратитесь к администратору.')}}
+  list(){return this.read().properties} getById(id:string){return this.list().find(v=>v.id===id)??null}
+  save(property:Property){const schema=this.read();const i=schema.properties.findIndex(v=>v.id===property.id);if(i>=0)schema.properties[i]=property;else schema.properties.push(property);try{localStorage.setItem(KEY,JSON.stringify(schema))}catch{throw new PropertyStorageError('Не удалось сохранить объект. Локальные preview могут превышать доступное место браузера.')}}
+  findDuplicates(internalId:string,sourceUrl:string,excludeId?:string){const a=internalId.trim().toLowerCase(),b=sourceUrl.trim().toLowerCase();return this.list().filter(v=>v.id!==excludeId&&(v.internalId.trim().toLowerCase()===a||Boolean(b&&v.sourceUrl.trim().toLowerCase()===b)))}
 }
-
-type StorageSchema = { version: 1; properties: Property[] };
-const STORAGE_KEY = 'rent-in-tbilisi:properties:v1';
-
-export class PropertyStorageError extends Error {}
-
-export class LocalStoragePropertyRepository implements PropertyRepository {
-  private read(): StorageSchema {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { version: 1, properties: [] };
-      const data: unknown = JSON.parse(raw);
-      if (!data || typeof data !== 'object' || !('version' in data) || !('properties' in data) || data.version !== 1 || !Array.isArray(data.properties)) throw new Error();
-      return data as StorageSchema;
-    } catch {
-      throw new PropertyStorageError('Локальные данные объектов повреждены. Очистите данные сайта или обратитесь к администратору.');
-    }
-  }
-
-  list() { return this.read().properties; }
-  getById(id: string) { return this.list().find((property) => property.id === id) ?? null; }
-  save(property: Property) {
-    const schema = this.read();
-    const index = schema.properties.findIndex((item) => item.id === property.id);
-    if (index >= 0) schema.properties[index] = property; else schema.properties.push(property);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(schema)); }
-    catch { throw new PropertyStorageError('Не удалось сохранить объект. Проверьте доступное место и настройки браузера.'); }
-  }
-  findDuplicates(internalId: string, sourceUrl: string, excludeId?: string) {
-    const normalizedId = internalId.trim().toLocaleLowerCase('ru');
-    const normalizedUrl = sourceUrl.trim().toLocaleLowerCase('ru');
-    return this.list().filter((item) => item.id !== excludeId && (
-      item.internalId.trim().toLocaleLowerCase('ru') === normalizedId ||
-      Boolean(normalizedUrl && item.sourceUrl.trim().toLocaleLowerCase('ru') === normalizedUrl)
-    ));
-  }
-}
-
-export const propertyRepository = new LocalStoragePropertyRepository();
+export const propertyRepository=new LocalStoragePropertyRepository();

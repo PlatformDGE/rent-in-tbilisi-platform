@@ -1,49 +1,12 @@
-import type { HistoryField, Property, PropertyHistoryEntry, PropertyInput } from '../domain/property';
+import type { AmenityKey, HistoryField, Property, PropertyHistoryEntry, PropertyInput } from '../domain/property';
 import type { PropertyRepository } from '../repositories/propertyRepository';
+const uid=()=>crypto.randomUUID();
+const trim=(input:PropertyInput):PropertyInput=>({...input,description:input.description.trim(),district:input.district.trim(),metro:input.metro.trim(),address:input.address.trim(),googleMapsUrl:input.googleMapsUrl.trim(),heatingType:input.heatingType.trim(),priceRange:input.priceRange.trim(),rentalTerm:input.rentalTerm.trim(),salePriceRange:input.salePriceRange.trim(),agent:input.agent.trim(),recruit:input.recruit.trim(),agentTelegram:input.agentTelegram.trim(),agentPhone:input.agentPhone.trim(),ownerName:input.ownerName.trim(),ownerPhone:input.ownerPhone.trim(),cadastralNumber:input.cadastralNumber.trim(),comment:input.comment.trim(),exclusiveStatus:input.exclusiveStatus.trim(),internalId:input.internalId.trim(),sourceUrl:input.sourceUrl.trim()});
+const event=(field:HistoryField,previousValue:string,newValue:string,action:string):PropertyHistoryEntry=>({id:uid(),field,previousValue,newValue,createdAt:new Date().toISOString(),action,author:'Пользователь'});
+export const validateProperty=(input:PropertyInput)=>{const e:Partial<Record<keyof PropertyInput,string>>={};if(!input.internalId.trim())e.internalId='Укажите внутренний ID.';if(!input.address.trim())e.address='Укажите адрес.';if(!input.district.trim())e.district='Укажите район.';if(input.price<=0)e.price='Цена должна быть больше нуля.';if(input.area!==null&&input.area<=0)e.area='Площадь должна быть больше нуля.';if(input.floor!==null&&input.floor<0)e.floor='Этаж не может быть отрицательным.';if(input.totalFloors!==null&&input.totalFloors<=0)e.totalFloors='Этажность должна быть больше нуля.';if(input.floor!==null&&input.totalFloors!==null&&input.floor>input.totalFloors)e.floor='Этаж не может быть выше этажности.';if(input.dealType==='Аренда'&&input.maxTenants!==null&&input.maxTenants<=0)e.maxTenants='Количество жильцов должно быть больше нуля.';if(input.dealType==='Продажа'&&!input.condition)e.condition='Укажите состояние объекта для продажи.';if(input.sourceUrl.trim())try{new URL(input.sourceUrl)}catch{e.sourceUrl='Введите корректную ссылку.'}if(input.googleMapsUrl.trim())try{new URL(input.googleMapsUrl)}catch{e.googleMapsUrl='Введите корректную ссылку Google Maps.'}return e};
+export class PropertyService{constructor(private repository:PropertyRepository){}create(raw:PropertyInput){const input=trim(raw);if(this.repository.findDuplicates(input.internalId,'').length)throw new Error('Объект с таким внутренним ID уже существует.');const now=new Date().toISOString();const property:Property={...input,id:uid(),createdAt:now,updatedAt:now,history:[event('Создание','',input.internalId,'Создание объекта')]};this.repository.save(property);return property}update(current:Property,raw:PropertyInput,action='Редактирование объекта'){const input=trim(raw);if(this.repository.findDuplicates(input.internalId,'',current.id).length)throw new Error('Объект с таким внутренним ID уже существует.');const entries:PropertyHistoryEntry[]=[];const add=(field:HistoryField,a:string,b:string)=>{if(a!==b)entries.push(event(field,a,b,action))};add('Цена',`${current.price} ${current.currency}`,`${input.price} ${input.currency}`);add('Статус',current.status,input.status);add('Собственник',`${current.ownerName} · ${current.ownerPhone}`,`${input.ownerName} · ${input.ownerPhone}`);add('Агент',current.agent||'Не назначен',input.agent||'Не назначен');const saved:Property={...current,...input,updatedAt:new Date().toISOString(),history:[...entries,...current.history]};this.repository.save(saved);return saved}}
+export const propertyService=(repository:PropertyRepository)=>new PropertyService(repository);
 
-const id = () => crypto.randomUUID();
-const normalize = (input: PropertyInput): PropertyInput => ({
-  ...input,
-  internalId: input.internalId.trim(), sourceUrl: input.sourceUrl.trim(), address: input.address.trim(),
-  district: input.district.trim(), cadastralNumber: input.cadastralNumber.trim(), ownerName: input.ownerName.trim(),
-  ownerPhone: input.ownerPhone.trim(), agent: input.agent.trim(), comment: input.comment.trim(),
-});
-const history = (field: HistoryField, previousValue: string, newValue: string, action: string): PropertyHistoryEntry => ({ id: id(), field, previousValue, newValue, createdAt: new Date().toISOString(), action, author: 'Пользователь' });
-
-export const validateProperty = (input: PropertyInput) => {
-  const errors: Partial<Record<keyof PropertyInput, string>> = {};
-  if (!input.internalId.trim()) errors.internalId = 'Укажите внутренний ID.';
-  if (!input.address.trim()) errors.address = 'Укажите адрес.';
-  if (!input.district.trim()) errors.district = 'Укажите район.';
-  if (input.price <= 0) errors.price = 'Цена должна быть больше нуля.';
-  for (const key of ['rooms', 'bedrooms', 'area', 'floor', 'totalFloors'] as const) if (input[key] !== null && input[key]! < 0) errors[key] = 'Значение не может быть отрицательным.';
-  if (input.rooms !== null && input.bedrooms !== null && input.bedrooms > input.rooms) errors.bedrooms = 'Спален не может быть больше, чем комнат.';
-  if (input.floor !== null && input.totalFloors !== null && input.floor > input.totalFloors) errors.floor = 'Этаж не может быть выше этажности.';
-  if (input.sourceUrl.trim()) { try { new URL(input.sourceUrl); } catch { errors.sourceUrl = 'Введите корректную ссылку.'; } }
-  return errors;
-};
-
-export class PropertyService {
-  constructor(private repository: PropertyRepository) {}
-  create(raw: PropertyInput) {
-    const input = normalize(raw);
-    if (this.repository.findDuplicates(input.internalId, '').length) throw new Error('Объект с таким внутренним ID уже существует.');
-    const now = new Date().toISOString();
-    const property: Property = { ...input, id: id(), createdAt: now, updatedAt: now, history: [history('Создание', '', input.internalId, 'Создание объекта')] };
-    this.repository.save(property); return property;
-  }
-  update(current: Property, raw: PropertyInput, action = 'Редактирование объекта') {
-    const input = normalize(raw);
-    if (this.repository.findDuplicates(input.internalId, '', current.id).length) throw new Error('Объект с таким внутренним ID уже существует.');
-    const entries: PropertyHistoryEntry[] = [];
-    const add = (field: HistoryField, before: string, after: string) => { if (before !== after) entries.push(history(field, before, after, action)); };
-    add('Цена', `${current.price} ${current.currency}`, `${input.price} ${input.currency}`);
-    add('Статус', current.status, input.status);
-    add('Собственник', `${current.ownerName} · ${current.ownerPhone}`, `${input.ownerName} · ${input.ownerPhone}`);
-    add('Агент', current.agent || 'Не назначен', input.agent || 'Не назначен');
-    const updated: Property = { ...current, ...input, updatedAt: new Date().toISOString(), history: [...entries, ...current.history] };
-    this.repository.save(updated); return updated;
-  }
-}
-
-export const propertyService = (repository: PropertyRepository) => new PropertyService(repository);
+const AMENITY_LABELS:Record<AmenityKey,string>={elevator:'Лифт',oven:'Духовка',parking:'Парковочное место',airConditioner:'Кондиционер',balcony:'Балкон',terrace:'Терраса',yard:'Двор',wifi:'Wi-Fi',television:'Телевизор',bathtub:'Ванна',shower:'Душ',dishwasher:'Посудомоечная машина',stove:'Плита',microwave:'Микроволновка',vacuum:'Пылесос',fireplace:'Камин'};
+export type PublicationDraft={deal:{type:Property['dealType'];exclusive:boolean;description:string};location:{district:string;metro:string;address:string;googleMapsUrl:string};property:{type:Property['propertyType'];bedrooms:Property['bedrooms'];buildingType:Property['buildingType'];area:number|null;floor:number|null;totalFloors:number|null;design:Property['design'];maxTenants:number|null;condition:Property['condition']};amenities:{bathrooms:number|null;heatingType:string;items:string[];pets:Property['pets']};price:{amount:number;currency:Property['currency'];deposit:number|null;priceRange:string;rentalTerm:string;salePriceRange:string};agent:{name:string;recruit:string;telegram:string;phone:string};owner:{name:string;phone:string;cadastralNumber:string;comment:string;exclusiveStatus:string};media:Property['media'];system:{propertyId:string;internalId:string;source:Property['source'];sourceUrl:string;status:Property['status'];telegram:Property['telegramPublication']}};
+export const buildPublicationDraft=(property:Property):PublicationDraft=>({deal:{type:property.dealType,exclusive:property.exclusive,description:property.description},location:{district:property.district,metro:property.metro,address:property.address,googleMapsUrl:property.googleMapsUrl},property:{type:property.propertyType,bedrooms:property.bedrooms,buildingType:property.buildingType,area:property.area,floor:property.floor,totalFloors:property.totalFloors,design:property.design,maxTenants:property.dealType==='Аренда'?property.maxTenants:null,condition:property.dealType==='Продажа'?property.condition:''},amenities:{bathrooms:property.bathrooms,heatingType:property.heatingType,items:(Object.keys(property.amenities) as AmenityKey[]).filter(key=>property.amenities[key]).map(key=>AMENITY_LABELS[key]),pets:property.pets},price:{amount:property.price,currency:property.currency,deposit:property.dealType==='Аренда'?property.deposit:null,priceRange:property.dealType==='Аренда'?property.priceRange:'',rentalTerm:property.dealType==='Аренда'?property.rentalTerm:'',salePriceRange:property.dealType==='Продажа'?property.salePriceRange:''},agent:{name:property.agent,recruit:property.recruit,telegram:property.agentTelegram,phone:property.agentPhone},owner:{name:property.ownerName,phone:property.ownerPhone,cadastralNumber:property.cadastralNumber,comment:property.comment,exclusiveStatus:property.exclusiveStatus},media:[...property.media].sort((a,b)=>a.order-b.order),system:{propertyId:property.id,internalId:property.internalId,source:property.source,sourceUrl:property.sourceUrl,status:property.status,telegram:property.telegramPublication}});
