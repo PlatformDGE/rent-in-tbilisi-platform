@@ -1,6 +1,7 @@
-import { BarChart3, Bot, Building2, FileText, Gauge, Handshake, Settings, UserRound, UsersRound, type LucideIcon } from 'lucide-react';
+import { BarChart3, Bot, Building2, FileText, Gauge, Handshake, Settings, ShieldCheck, UserRound, UsersRound, type LucideIcon } from 'lucide-react';
+import type { UserRole } from '../domain/access';
 
-export type NavigationItem = { label: string; path: string; icon: LucideIcon; mobile?: boolean };
+export type NavigationItem = { label: string; path: string; icon: LucideIcon; mobile?: boolean; roles?:UserRole[] };
 
 export const navigation: NavigationItem[] = [
   { label: 'Обзор', path: '/', icon: Gauge, mobile: true },
@@ -10,6 +11,7 @@ export const navigation: NavigationItem[] = [
   { label: 'Отчёты', path: '/reports', icon: BarChart3 },
   { label: 'Договоры', path: '/contracts', icon: FileText, mobile: true },
   { label: 'Агенты', path: '/agents', icon: UserRound },
+  { label: 'Модерация', path: '/moderation', icon: ShieldCheck, roles:['admin','operator'] },
   { label: 'Telegram', path: '/telegram', icon: Bot },
   { label: 'Настройки', path: '/settings', icon: Settings, mobile: true },
 ];

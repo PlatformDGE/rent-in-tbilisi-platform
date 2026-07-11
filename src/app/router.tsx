@@ -15,6 +15,7 @@ const ContractsPage = lazy(() => import('../modules/contracts/ContractsPage'));
 const AgentsPage = lazy(() => import('../modules/agents/AgentsPage'));
 const TelegramPage = lazy(() => import('../modules/telegram/TelegramPage'));
 const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
+const ModerationPage = lazy(() => import('../modules/moderation/ModerationPage'));
 const withLoading = (page: ReactNode) => <Suspense fallback={<LoadingScreen compact />}>{page}</Suspense>;
 
 export const router = createBrowserRouter([{
@@ -31,5 +32,6 @@ export const router = createBrowserRouter([{
     { path: 'agents', element: withLoading(<AgentsPage />) },
     { path: 'telegram', element: withLoading(<TelegramPage />) },
     { path: 'settings', element: withLoading(<SettingsPage />) },
+    { path: 'moderation', element: withLoading(<ModerationPage />) },
   ],
 }], { basename: import.meta.env.BASE_URL });

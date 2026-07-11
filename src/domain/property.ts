@@ -4,11 +4,11 @@ export const CURRENCIES = ['USD','GEL','EUR'] as const;
 export const DEAL_TYPES = ['rent','sale'] as const;
 export type PropertyStatus=typeof PROPERTY_STATUSES[number]; export type PropertySource=typeof PROPERTY_SOURCES[number]; export type Currency=typeof CURRENCIES[number]; export type DealType=typeof DEAL_TYPES[number];
 export type HistoryField='Создание'|'Цена'|'Статус'|'Собственник'|'Агент';
-export type PropertyHistoryEntry={id:string;field:HistoryField;previousValue:string;newValue:string;createdAt:string;action:string;author:'Пользователь'};
+export type PropertyHistoryEntry={id:string;field:HistoryField;previousValue:string;newValue:string;createdAt:string;action:string;author:'Пользователь';eventType?:import('./access').AuditEventType;actorId?:string;timestamp?:string;entityId?:string;before?:unknown;after?:unknown;reason?:string;changeRequestId?:string};
 export type MediaItem={id:string;type:'photo'|'video';name:string;mimeType:string;size:number;order:number;isPrimary:boolean;isOriginal:boolean;previewDataUrl:string;watermark:{enabled:boolean;version:null}};
 export type TelegramPublicationMetadata={publicationId:string;publishedAt:string;channel:string;messageId:string;draftVersion:number|null};
 export type Property={
-  id:string; dealType:DealType; exclusive:boolean; description:string; districtId:string; metroId:string; address:string; googleMapsUrl:string;
+  id:string; version:number; assignedAgentId:string; createdByUserId:string; dealType:DealType; exclusive:boolean; description:string; districtId:string; metroId:string; address:string; googleMapsUrl:string;
   bedroomsId:string; propertyTypeId:string; residentialSubtypeId:string; commercialTypeId:string; buildingTypeId:string; area:number|null; floor:number|null; totalFloors:number|null; designId:string; maxTenants:number|null; conditionId:string;
   bathrooms:number|null; balconyCount:number; terraceCount:number; amenityIds:string[]; petId:string; rentalPeriodIds:string[];
   price:number; deposit:number|null; currency:Currency;
@@ -16,8 +16,8 @@ export type Property={
   ownerName:string; ownerPhone:string; cadastralNumber:string; comment:string; exclusiveStatus:string;
   media:MediaItem[];
   internalId:string; source:PropertySource; sourceUrl:string; status:PropertyStatus;
-  createdAt:string; updatedAt:string; history:PropertyHistoryEntry[]; telegramPublication:TelegramPublicationMetadata; legacyMetadata:Record<string,unknown>;
+  createdAt:string; updatedAt:string; history:PropertyHistoryEntry[]; telegramPublication:TelegramPublicationMetadata; telegramActions:import('./access').TelegramAction[]; approvedDiscount:Record<string,unknown>|null; legacyMetadata:Record<string,unknown>;
 };
 export type PropertyInput=Omit<Property,'id'|'createdAt'|'updatedAt'|'history'>;
 export const EMPTY_TELEGRAM_METADATA:TelegramPublicationMetadata={publicationId:'',publishedAt:'',channel:'',messageId:'',draftVersion:null};
-export const EMPTY_PROPERTY_INPUT:PropertyInput={dealType:'rent',exclusive:false,description:'',districtId:'',metroId:'',address:'',googleMapsUrl:'',bedroomsId:'bedrooms.1Bed',propertyTypeId:'propertyType.Apartment',residentialSubtypeId:'',commercialTypeId:'',buildingTypeId:'',area:null,floor:null,totalFloors:null,designId:'',maxTenants:null,conditionId:'',bathrooms:null,balconyCount:1,terraceCount:1,amenityIds:[],petId:'pets.ByAgreement',rentalPeriodIds:[],price:0,deposit:null,currency:'USD',agentId:'',agentHashtag:'',ownerName:'',ownerPhone:'',cadastralNumber:'',comment:'',exclusiveStatus:'',media:[],internalId:'',source:'Сайт',sourceUrl:'',status:'Новый',telegramPublication:{...EMPTY_TELEGRAM_METADATA},legacyMetadata:{}};
+export const EMPTY_PROPERTY_INPUT:PropertyInput={version:1,assignedAgentId:'',createdByUserId:'',dealType:'rent',exclusive:false,description:'',districtId:'',metroId:'',address:'',googleMapsUrl:'',bedroomsId:'bedrooms.1Bed',propertyTypeId:'propertyType.Apartment',residentialSubtypeId:'',commercialTypeId:'',buildingTypeId:'',area:null,floor:null,totalFloors:null,designId:'',maxTenants:null,conditionId:'',bathrooms:null,balconyCount:1,terraceCount:1,amenityIds:[],petId:'pets.ByAgreement',rentalPeriodIds:[],price:0,deposit:null,currency:'USD',agentId:'',agentHashtag:'',ownerName:'',ownerPhone:'',cadastralNumber:'',comment:'',exclusiveStatus:'',media:[],internalId:'',source:'Сайт',sourceUrl:'',status:'Новый',telegramPublication:{...EMPTY_TELEGRAM_METADATA},telegramActions:[],approvedDiscount:null,legacyMetadata:{}};

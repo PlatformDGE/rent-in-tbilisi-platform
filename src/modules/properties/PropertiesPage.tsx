@@ -2,7 +2,9 @@ import { Building2, Grid2X2, List, Plus, Search, SlidersHorizontal, X } from 'lu
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CURRENCIES, PROPERTY_SOURCES, PROPERTY_STATUSES, type Property } from '../../domain/property';
-import { PropertyStorageError, propertyRepository } from '../../repositories/propertyRepository';
+import { PropertyStorageError } from '../../repositories/propertyRepository';
+import { propertyAccessService } from '../../services/propertyAccessService';
+import { currentUserService } from '../../services/currentUserService';
 import { formatDate, formatPrice, statusClass } from './property.formatters';
 import { getTaxonomyLabel } from '../../services/publicationTaxonomy';
 import './properties.css';
@@ -14,7 +16,8 @@ export default function PropertiesPage() {
   const [sort, setSort] = useState<SortKey>('updatedAt'); const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
   const [view, setView] = useState<'table' | 'cards'>(() => { try { return localStorage.getItem('properties:view') === 'cards' ? 'cards' : 'table'; } catch { return 'table'; } });
   let properties: Property[] = []; let error = '';
-  try { properties = propertyRepository.list(); } catch (reason) { error = reason instanceof PropertyStorageError ? reason.message : 'Не удалось загрузить объекты.'; }
+  const currentUser=currentUserService.getCurrentUser();
+  try { properties = propertyAccessService.list(currentUser); } catch (reason) { error = reason instanceof PropertyStorageError ? reason.message : 'Не удалось загрузить объекты.'; }
   const districts = [...new Set(properties.map((item) => item.districtId).filter(Boolean))].sort();
   const agents = [...new Set(properties.map((item) => item.agentHashtag).filter(Boolean))].sort();
   const types = [...new Set(properties.map((item) => item.commercialTypeId||item.residentialSubtypeId||item.propertyTypeId).filter(Boolean))].sort();
