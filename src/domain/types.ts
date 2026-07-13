@@ -43,6 +43,8 @@ export type Property = {
   metro: string;
   address: string;
   mapLink: string;
+  latitude?: number;
+  longitude?: number;
   cadastralCode: string;
   building: string;
   source: string;

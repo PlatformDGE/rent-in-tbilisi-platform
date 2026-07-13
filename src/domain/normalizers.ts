@@ -30,6 +30,7 @@ import type {
   TeamRole,
 } from './types';
 import { teamRoles } from './constants';
+import { extractCoordinatesFromMapLink } from '../services/propertyCoordinates';
 
 export function normalizeBoolean(value: unknown) {
   return value === true || value === 'true' || value === 'Да' || value === 'Allowed';
@@ -147,6 +148,10 @@ export function normalizeProperty(property: Partial<Property> & Record<string, u
   const area = String(property.area || '').replace('м2', '').replace('m2', '').trim();
   const price = String(property.price || '').replace('$', '').replace('₾', '').replace('€', '').trim();
   const floorParts = String(property.floor || '').split('/');
+  const mapLink = String(property.mapLink || '');
+  const mapCoordinates = extractCoordinatesFromMapLink(mapLink);
+  const latitude = typeof property.latitude === 'number' ? property.latitude : Number.NaN;
+  const longitude = typeof property.longitude === 'number' ? property.longitude : Number.NaN;
   return {
     ...emptyProperty,
     id: String(property.id || `RIT-${1000 + index}`),
@@ -158,7 +163,9 @@ export function normalizeProperty(property: Partial<Property> & Record<string, u
     district: normalizeDistrictValue(property.district),
     metro: normalizeMetroValue(property.metro),
     address: String(property.address || ''),
-    mapLink: String(property.mapLink || ''),
+    mapLink,
+    latitude: Number.isFinite(latitude) ? latitude : mapCoordinates?.latitude,
+    longitude: Number.isFinite(longitude) ? longitude : mapCoordinates?.longitude,
     cadastralCode: String(property.cadastralCode || ''),
     building: String(property.building || ''),
     source: normalizeSource(property.source),

@@ -1675,3 +1675,390 @@ td span {
     border-radius: 18px;
   }
 }
+
+/* Unified platform visual language */
+:root {
+  --accent: #1d3560;
+  --accent-strong: #132747;
+  --bg: #f4f7fb;
+  --border: #dfe6ef;
+  --card-muted: #f7f9fc;
+  --green: #1d3560;
+  --green-dark: #132747;
+  --green-soft: #eaf0f8;
+  --shadow: 0 14px 38px rgba(29, 53, 96, 0.08);
+}
+
+body {
+  background: linear-gradient(180deg, #edf3fa 0, var(--bg) 340px);
+  overflow-x: hidden;
+}
+
+.content {
+  min-width: 0;
+  padding: 28px clamp(20px, 3vw, 44px) 48px;
+}
+
+.pageFrame {
+  gap: 22px;
+  margin: 0 auto;
+  max-width: 1520px;
+}
+
+.sidebar {
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+  border-color: var(--border);
+}
+
+.navButton {
+  border-radius: 12px;
+  color: var(--muted);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.navButton:hover,
+.navButton.active {
+  background: var(--green-soft);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+.workspace,
+.uiCard,
+.propertyCard,
+.agentCard,
+.tableWrap,
+.loginPanel,
+.confirmDialog,
+.phoneShell {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.workspace,
+.uiCard {
+  background: var(--card);
+  padding: clamp(18px, 2vw, 26px);
+}
+
+.sectionHeader {
+  gap: 18px;
+}
+
+.sectionHeader h2,
+.catalogHero h2 {
+  color: var(--fg);
+  font-size: clamp(21px, 2vw, 28px);
+  letter-spacing: -0.025em;
+}
+
+.eyebrow,
+.uiEyebrow {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton,
+.iconButton,
+input,
+select,
+textarea,
+.searchBox {
+  border-radius: 12px;
+}
+
+.primaryButton {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.primaryButton:hover {
+  background: var(--accent-strong);
+}
+
+.catalogHero {
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(280px, 0.8fr);
+}
+
+.catalogHero .quickFilterRow {
+  grid-column: 1 / -1;
+}
+
+.quickFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.quickFilterRow a {
+  background: var(--green-soft);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 13px;
+}
+
+.dashboardMetricGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.metricCardButton {
+  background: transparent;
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.metricCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  box-shadow: 0 8px 24px rgba(29, 53, 96, 0.06);
+  height: 100%;
+  padding: 17px;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.metricCardButton:hover .metricCard {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  transform: translateY(-2px);
+}
+
+.metricIcon {
+  align-items: center;
+  background: var(--green-soft);
+  border-radius: 10px;
+  color: var(--accent);
+  display: inline-flex;
+  padding: 8px;
+}
+
+.metricCard span,
+.metricCard strong {
+  display: block;
+}
+
+.metricCard > span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 15px;
+}
+
+.metricCard strong {
+  color: var(--fg);
+  font-size: 25px;
+  margin-top: 5px;
+}
+
+.dashboardFeatureGrid {
+  align-items: start;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.75fr);
+}
+
+.telegramTop,
+.mapCard {
+  min-width: 0;
+}
+
+.telegramTestBadge {
+  background: #fff2cc;
+  border-radius: 999px;
+  color: #805b00;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  padding: 5px 9px;
+}
+
+.telegramCardGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.telegramPropertyCard {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.telegramMedia {
+  align-items: center;
+  background: var(--green-soft);
+  display: flex;
+  height: 132px;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.telegramMedia img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rankBadge,
+.repostBadge {
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 9px;
+  position: absolute;
+  top: 10px;
+}
+
+.rankBadge { background: var(--accent); left: 10px; }
+.repostBadge { background: rgba(15, 23, 42, 0.82); right: 10px; }
+
+.telegramCardBody { padding: 14px; }
+.telegramCardBody h3 { font-size: 15px; margin: 6px 0; }
+.telegramCardBody p { font-size: 12px; margin: 3px 0; }
+.telegramPrice { color: var(--accent); font-size: 18px; font-weight: 800; }
+.telegramLink { align-items: center; color: var(--accent); display: inline-flex; font-size: 13px; font-weight: 750; gap: 6px; margin-top: 10px; }
+
+.compactMap {
+  border-radius: 15px;
+  height: 350px;
+  overflow: hidden;
+  width: 100%;
+  z-index: 0;
+}
+
+.propertyDivIcon {
+  background: transparent;
+  border: 0;
+}
+
+.propertyDivIcon span {
+  align-items: center;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 10px 10px 10px 2px;
+  box-shadow: 0 5px 14px rgba(29, 53, 96, 0.3);
+  color: #fff;
+  display: flex;
+  font-size: 10px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 5px;
+  transform: rotate(-4deg);
+  white-space: nowrap;
+}
+
+.mapPopupCard { display: grid; gap: 7px; }
+.mapPopupCard img { border-radius: 9px; height: 92px; object-fit: cover; width: 100%; }
+.mapPopupCard strong { font-size: 14px; }
+.mapPopupCard small { color: var(--muted); }
+.mapPopupCard a { color: var(--accent); font-weight: 750; }
+
+.propertyCard {
+  border-radius: 18px;
+  overflow: hidden;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.propertyCard:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  transform: translateY(-3px);
+}
+
+.propertyCard img,
+.propertyCardMedia {
+  border-radius: 15px 15px 0 0;
+}
+
+.tableWrap {
+  box-shadow: none;
+  overflow: auto;
+}
+
+table th {
+  background: var(--card-muted);
+  color: var(--muted);
+}
+
+.entityCardGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.entityCard {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.entityField,
+.entityPrimary { display: grid; gap: 4px; }
+.entityField span,
+.entityPrimary span { color: var(--muted); font-size: 11px; }
+.entityField strong { font-size: 13px; font-weight: 650; }
+.entityPrimary { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+.entityPrimary strong { color: var(--accent); font-size: 17px; }
+
+.modalBackdrop { backdrop-filter: blur(8px); }
+.confirmDialog { border-radius: 22px; }
+
+@media (max-width: 1280px) {
+  .dashboardMetricGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dashboardFeatureGrid { grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); }
+  .telegramCardGrid { grid-template-columns: 1fr; }
+  .entityCardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px) {
+  .content { padding: 20px 18px 40px; }
+  .dashboardFeatureGrid { grid-template-columns: 1fr; }
+  .telegramCardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .compactMap { height: 340px; }
+  .navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: visible; }
+  .navButton { justify-content: center; min-width: 0; }
+  .navButton:hover,
+  .navButton.active { transform: none; }
+}
+
+@media (max-width: 680px) {
+  .catalogHero { grid-template-columns: 1fr; }
+  .catalogHero .quickFilterRow { grid-column: auto; }
+  .dashboardMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .telegramCardGrid,
+  .entityCardGrid { grid-template-columns: 1fr; }
+  .navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .navButton { justify-content: flex-start; }
+  .workspace,
+  .uiCard { border-radius: 17px; padding: 16px; }
+  .compactMap { height: 290px; }
+}
+
+@media (max-width: 390px) {
+  .content { padding-left: 12px; padding-right: 12px; }
+  .dashboardMetricGrid { gap: 10px; }
+  .metricCard { padding: 13px; }
+  .metricCard strong { font-size: 22px; }
+}

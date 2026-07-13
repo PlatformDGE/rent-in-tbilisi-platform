@@ -116,6 +116,10 @@ import type {
   ThemeMode,
   Toast,
 } from './domain/types';
+import { CompactMap } from './components/CompactMap';
+import { TelegramTop } from './components/TelegramTop';
+import { MetricCard, SectionHeader } from './components/ui';
+import { extractCoordinatesFromMapLink } from './services/propertyCoordinates';
 
 type CrmContextValue = {
   agents: Agent[];
@@ -257,7 +261,7 @@ function AppProvider({ children }: { children: ReactNode }) {
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/rent-in-tbilisi-platform/">
       <AppProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -484,29 +488,23 @@ function getPageTitle(pathname: string) {
 }
 
 function DashboardPage() {
-  const { agents, deals, properties, publications, session } = useCrm();
+  const { agents, clients, deals, properties, publications, session } = useCrm();
   const [activeMetric, setActiveMetric] = useState<string | null>(null);
+  const [dashboardSearch, setDashboardSearch] = useState('');
+  const [telegramReposts, setTelegramReposts] = useState(0);
   const stats = getPropertyStats(properties);
   const currentAgent = agents.find((agent) => agent.name === session?.name) || agents.find((agent) => agent.name === 'David Tibelashvili');
   const workdayTasks = buildAgentWorkday(currentAgent, properties, deals, publications);
-  const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const monthCommission = deals
-    .filter((deal) => Date.parse(deal.date) >= monthAgo)
-    .reduce((sum, deal) => sum + safeNumber(deal.commission), 0);
-  const recentProperties = [...properties].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 4);
+  const recentProperties = [...properties]
+    .filter((property) => `${property.titleRu} ${property.titleEn} ${property.address} ${property.district}`.toLowerCase().includes(dashboardSearch.toLowerCase()))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 4);
   const cards = [
     { label: 'Всего объектов', value: stats.total, icon: Building2 },
-    { label: 'Активные', value: stats.active, icon: BarChart3 },
-    { label: 'На рекламе', value: stats.onAds, icon: Sparkles },
-    { label: 'Эксклюзивы', value: stats.exclusive, icon: ShieldCheck },
-    { label: 'Сдано за неделю', value: stats.rentedWeek, icon: Check },
-    { label: 'Сдано за месяц', value: stats.rentedMonth, icon: Check },
-    { label: 'Продано за месяц', value: stats.soldMonth, icon: Handshake },
-    { label: 'Добавлено за неделю', value: stats.addedWeek, icon: Plus },
-    { label: 'Реализовано за неделю', value: stats.realizedWeek, icon: Handshake },
-    { label: 'Комиссия за месяц', value: `${monthCommission}$`, icon: Sparkles },
-    { label: 'Активные агенты', value: agents.filter((agent) => agent.isActive).length, icon: UsersRound },
-    { label: 'Публикации за неделю', value: thisWeekCount(publications), icon: MessageCircle },
+    { label: 'Свободные объекты', value: stats.active, icon: KeyRound },
+    { label: 'Активные клиенты', value: clients.filter((client) => !/закрыт|потерян/i.test(client.status)).length, icon: UserRound },
+    { label: 'Задачи', value: workdayTasks.reduce((sum, task) => sum + safeNumber(task.value), 0), icon: Check },
+    { label: 'Сделки', value: deals.length, icon: Handshake },
+    { label: 'Telegram-репосты', value: telegramReposts, icon: MessageCircle },
   ];
   const metricItems = (() => {
     if (!activeMetric) return [];
@@ -578,54 +576,39 @@ function DashboardPage() {
         </div>
       }
     >
-      <section className="heroPanel premiumHero">
+      <section className="catalogHero uiCard">
         <div>
-          <p className="eyebrow">Trust operations for premium real estate</p>
-          <h2>Molecula соединяет объекты, людей и публикации</h2>
-          <p>Рабочий центр для Rent in Tbilisi: база объектов, фото, Telegram-шаблоны, команда и история публикаций.</p>
+          <p className="eyebrow">Каталог недвижимости</p>
+          <h2>Вся работа с объектами — в одном пространстве</h2>
+          <p>Найдите объект, проверьте показатели, откройте карту или перейдите к публикациям команды.</p>
         </div>
-        <a className="secondaryButton" href="https://web.telegram.org/" target="_blank" rel="noreferrer">
-          <ExternalLink size={18} />
-          Открыть Telegram
-        </a>
-      </section>
-
-      <section className="workspace">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Agent Workday</p>
-            <h2>Рабочий день агента</h2>
-            <p>Персональный список действий: что требует звонка, медиа, публикации, договора или проверки.</p>
-          </div>
-          <Link className="secondaryButton" to={currentAgent ? `/agents/${currentAgent.id}` : '/agents'}>
-            <UserRound size={18} />
-            Профиль агента
-          </Link>
-        </div>
-        <div className="workdayGrid">
-          {workdayTasks.map((task) => (
-            <Link className={`workdayTask workday-${task.tone}`} key={task.id} to={task.to}>
-              <span>{task.title}</span>
-              <strong>{task.value}</strong>
-              <small>{task.description}</small>
-            </Link>
-          ))}
+        <label className="searchBox dashboardSearch"><Search size={19} /><input value={dashboardSearch} onChange={(event) => setDashboardSearch(event.target.value)} placeholder="Поиск по адресу, району или названию" /></label>
+        <div className="quickFilterRow">
+          <Link to="/properties">Все объекты</Link><Link to="/properties">В аренду</Link><Link to="/properties">На продажу</Link><Link to="/analytics">Аналитика</Link>
         </div>
       </section>
 
-      <section className="metrics dashboardMetrics">
+      <section className="dashboardMetricGrid">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <button className="metricButton" key={card.label} onClick={() => setActiveMetric(card.label)} type="button">
-              <span>
-                <Icon size={17} />
-                {card.label}
-              </span>
-              <strong>{card.value}</strong>
+            <button className="metricCardButton" key={card.label} onClick={() => setActiveMetric(card.label)} type="button">
+              <MetricCard icon={<Icon size={19} />} label={card.label} value={card.value} />
             </button>
           );
         })}
+      </section>
+
+      <section className="dashboardFeatureGrid">
+        <TelegramTop onTotalChange={setTelegramReposts} />
+        <CompactMap properties={properties} />
+      </section>
+
+      <section className="workspace uiCard">
+        <SectionHeader eyebrow="Agent Workday" title="Рабочий день агента" description="Звонки, медиа, публикации и договоры, которые требуют внимания." actions={<Link className="secondaryButton" to={currentAgent ? `/agents/${currentAgent.id}` : '/agents'}><UserRound size={18} />Профиль агента</Link>} />
+        <div className="workdayGrid">
+          {workdayTasks.map((task) => <Link className={`workdayTask workday-${task.tone}`} key={task.id} to={task.to}><span>{task.title}</span><strong>{task.value}</strong><small>{task.description}</small></Link>)}
+        </div>
       </section>
 
       {activeMetric && (
@@ -652,7 +635,7 @@ function DashboardPage() {
         </div>
       )}
 
-      <section className="workspace">
+      <section className="workspace uiCard">
         <div className="sectionHeader">
           <div>
             <h2>Последние добавленные объекты</h2>
@@ -1203,6 +1186,8 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           metro: existingProperty.metro,
           address: existingProperty.address,
           mapLink: existingProperty.mapLink,
+          latitude: existingProperty.latitude,
+          longitude: existingProperty.longitude,
           cadastralCode: existingProperty.cadastralCode,
           building: existingProperty.building,
           source: existingProperty.source,
@@ -1353,6 +1338,7 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
   function saveProperty(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const now = new Date().toISOString();
+    const mapCoordinates = extractCoordinatesFromMapLink(form.mapLink);
     const property: Property = {
       ...form,
       id: existingProperty?.id || `RIT-${Date.now().toString().slice(-6)}`,
@@ -1368,6 +1354,8 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       area: form.area.trim(),
       city: form.city.trim(),
       mapLink: form.mapLink.trim(),
+      latitude: form.latitude ?? mapCoordinates?.latitude,
+      longitude: form.longitude ?? mapCoordinates?.longitude,
       cadastralCode: form.cadastralCode.trim(),
       source: form.source.trim(),
       agent: form.agent.trim(),
@@ -1452,7 +1440,15 @@ function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
           </label>
           <label>
             Ссылка на карту
-            <input value={form.mapLink} onChange={(event) => updateField('mapLink', event.target.value)} />
+            <input placeholder="https://maps.google.com/?q=41.7151,44.8271" value={form.mapLink} onChange={(event) => updateField('mapLink', event.target.value)} />
+          </label>
+          <label>
+            Широта
+            <input min="-90" max="90" step="any" type="number" value={form.latitude ?? ''} onChange={(event) => updateField('latitude', event.target.value === '' ? undefined : Number(event.target.value))} />
+          </label>
+          <label>
+            Долгота
+            <input min="-180" max="180" step="any" type="number" value={form.longitude ?? ''} onChange={(event) => updateField('longitude', event.target.value === '' ? undefined : Number(event.target.value))} />
           </label>
           <label>
             Кадастровый код
@@ -2616,25 +2612,17 @@ function EntityTable({ columns, rows, title }: { columns: string[]; rows: string
         {rows.length === 0 ? (
           <EmptyState title={`${title}: нет записей`} text="Записи появятся здесь после добавления данных." />
         ) : (
-          <div className="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  {columns.map((column) => (
-                    <th key={column}>{column}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  <tr key={index}>
-                    {row.map((cell, cellIndex) => (
-                      <td key={`${index}-${cellIndex}`}>{cell || '-'}</td>
-                    ))}
-                  </tr>
+          <div className="entityCardGrid">
+            {rows.map((row, index) => (
+              <article className="entityCard" key={index}>
+                {row.map((cell, cellIndex) => (
+                  <div className={cellIndex === 0 ? 'entityPrimary' : 'entityField'} key={`${index}-${cellIndex}`}>
+                    <span>{columns[cellIndex]}</span>
+                    <strong>{cell || '—'}</strong>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </article>
+            ))}
           </div>
         )}
       </section>
