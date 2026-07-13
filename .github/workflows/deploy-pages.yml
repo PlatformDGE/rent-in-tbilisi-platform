@@ -34,8 +34,13 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Add SPA fallback
-        run: cp dist/index.html dist/404.html
+      - name: Add SPA entry points and fallback
+        run: |
+          for route in login properties properties/new post-preview telegram agents owners clients deals analytics districts publications import settings; do
+            mkdir -p "dist/$route"
+            cp dist/index.html "dist/$route/index.html"
+          done
+          cp dist/index.html dist/404.html
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
