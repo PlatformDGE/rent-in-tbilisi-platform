@@ -2,9 +2,9 @@ import { ExternalLink, MessageCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EmptyStateCard, LoadingState, SectionHeader } from './ui';
+import { TELEGRAM_ASSET_BASE_URL } from '../config/runtime';
 
 const TELEGRAM_DATA_URL = `${import.meta.env.BASE_URL}telegram-top10.json`;
-const TELEGRAM_ASSET_BASE = 'https://platformdge.github.io/-rentintbilisi-crm/';
 
 export type TelegramItem = {
   id: string;
@@ -92,7 +92,7 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
           {items.map((item, index) => (
             <article className="telegramPropertyCard" data-telegram-id={item.id} key={item.id}>
               <div className="telegramMedia">
-                {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE).toString()} /> : <MessageCircle size={30} />}
+                {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
                 <span className="rankBadge">№{index + 1}</span>
                 <span className="repostBadge">↗ {item.daily_reposts} {pluralizeReposts(item.daily_reposts)}</span>
               </div>

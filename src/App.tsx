@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LogOut,
   Map,
+  Menu,
   MessageCircle,
   Moon,
   Pencil,
@@ -120,6 +121,7 @@ import type {
 import { CompactMap } from './components/CompactMap';
 import { TelegramTop, useTelegramTop } from './components/TelegramTop';
 import { extractCoordinatesFromMapLink } from './services/propertyCoordinates';
+import { CURRENT_USER } from './config/runtime';
 
 type CrmContextValue = {
   agents: Agent[];
@@ -159,6 +161,7 @@ function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<Session | null>(() => {
     const savedSession = readStorage<Session | null>(SESSION_STORAGE_KEY, null);
     const legacyDemoNames = ['David Tibelashvili', 'Mari Operator', 'Nino Beridze', 'Ana Lomidze', 'Sergi Matchavariani'];
+    if (savedSession?.name === 'Администратор') return { ...savedSession, name: CURRENT_USER.name };
     return savedSession && !legacyDemoNames.includes(savedSession.name) ? savedSession : null;
   });
   const [theme, setThemeState] = useState<ThemeMode>(() => readStorage<ThemeMode>(THEME_STORAGE_KEY, 'light'));
@@ -284,6 +287,7 @@ export function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/map" element={<TelegramMapPage />} />
             <Route path="/account" element={<PersonalCabinetPage />} />
+            <Route path="/profile" element={<PersonalCabinetPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/districts" element={<DistrictsPage />} />
             <Route path="/publications" element={<PublicationsPage />} />
@@ -322,7 +326,7 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
 function LoginPage() {
   const { session, setSession, setTheme, theme } = useCrm();
   const navigate = useNavigate();
-  const [name, setName] = useState('');
+  const [name, setName] = useState<string>(CURRENT_USER.name);
   const [role, setRole] = useState<AuthRole>('Администратор');
 
   useEffect(() => {
@@ -374,6 +378,10 @@ function LoginPage() {
 function ProtectedLayout() {
   const { session, setSession, setTheme, theme } = useCrm();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => setMenuOpen(false), [location.pathname]);
 
   if (!session) return <Navigate to="/login" replace />;
 
@@ -384,10 +392,20 @@ function ProtectedLayout() {
 
   return (
     <div className="appShell">
-      <aside className="sidebar">
-        <Link className="brandLink" to="/">
-          <Logo />
-        </Link>
+      <header className="mobileHeader">
+        <button className="mobileMenuButton" type="button" onClick={() => setMenuOpen(true)} aria-label="Открыть меню" aria-expanded={menuOpen}>
+          <Menu size={22} />
+        </button>
+        <div className="mobileHeaderIdentity"><strong>Rent in Tbilisi</strong><span>{session.name || CURRENT_USER.name}</span></div>
+      </header>
+      {menuOpen && <button className="mobileNavBackdrop" type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)} />}
+      <aside className={menuOpen ? 'sidebar mobileOpen' : 'sidebar'}>
+        <div className="sidebarTopline">
+          <Link className="brandLink" to="/"><Logo /></Link>
+          <button className="mobileCloseButton" type="button" onClick={() => setMenuOpen(false)} aria-label="Закрыть меню"><X size={21} /></button>
+        </div>
+
+        <UserIdentity name={session.name || CURRENT_USER.name} />
 
         <nav className="navigation" aria-label="Основные разделы">
           <NavItem icon={LayoutDashboard} label="Главная" to="/" />
@@ -400,17 +418,11 @@ function ProtectedLayout() {
           <NavItem icon={Map} label="Карта" to="/map" />
           <NavItem icon={BarChart3} label="Аналитика" to="/analytics" />
           <NavItem icon={Settings} label="Настройки" to="/settings" />
-          <NavItem icon={UserRound} label="Личный кабинет" to="/account" />
+          <NavItem icon={UserRound} label="Личный кабинет" to="/profile" />
         </nav>
 
         <div className="sidebarFooter">
-          <div className="profileBox">
-            <span className="avatar">{initials(session.name)}</span>
-            <div>
-              <strong>{session.name}</strong>
-              <span>{session.role}</span>
-            </div>
-          </div>
+          <UserIdentity name={session.name || CURRENT_USER.name} compact />
           <div className="sidebarActions">
             <button className="iconButton" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} type="button">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -425,6 +437,15 @@ function ProtectedLayout() {
       <main className="content">
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+function UserIdentity({ compact = false, name }: { compact?: boolean; name: string }) {
+  return (
+    <div className={compact ? 'profileBox compactIdentity' : 'profileBox drawerIdentity'}>
+      <span className="avatar" aria-hidden="true">{name.trim().charAt(0).toUpperCase() || 'I'}</span>
+      <div><strong>{name || CURRENT_USER.name}</strong><span>{CURRENT_USER.role}</span></div>
     </div>
   );
 }
@@ -454,7 +475,7 @@ function PageFrame({ actions, children }: { actions?: ReactNode; children: React
           {actions}
           <div className="topbarMeta">
             <ShieldCheck size={18} />
-            <span>{session?.role}</span>
+            <span>{session?.name || CURRENT_USER.name}</span>
           </div>
         </div>
       </header>
@@ -478,6 +499,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith('/contracts')) return 'Договоры';
   if (pathname.startsWith('/map')) return 'Карта';
   if (pathname.startsWith('/account')) return 'Личный кабинет';
+  if (pathname.startsWith('/profile')) return 'Личный кабинет';
   if (pathname.startsWith('/deals')) return 'Сделки';
   if (pathname.startsWith('/analytics')) return 'Аналитика';
   if (pathname.startsWith('/districts')) return 'Районы и цены';

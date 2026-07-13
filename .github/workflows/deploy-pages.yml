@@ -42,7 +42,7 @@ jobs:
 
       - name: Add SPA entry points and fallback
         run: |
-          for route in login properties properties/new post-preview telegram agents owners clients deals contracts reports map account analytics districts publications import settings; do
+          for route in login properties properties/new post-preview telegram agents owners clients deals contracts reports map account profile analytics districts publications import settings; do
             mkdir -p "dist/$route"
             cp dist/index.html "dist/$route/index.html"
           done

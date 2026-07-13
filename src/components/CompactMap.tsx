@@ -3,8 +3,7 @@ import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
 import type { TelegramItem } from './TelegramTop';
 import { EmptyStateCard, SectionHeader } from './ui';
-
-const TELEGRAM_ASSET_BASE = 'https://platformdge.github.io/-rentintbilisi-crm/';
+import { TELEGRAM_ASSET_BASE_URL } from '../config/runtime';
 
 function hasCoordinates(item: TelegramItem) {
   return typeof item.latitude === 'number' && Number.isFinite(item.latitude)
@@ -18,7 +17,7 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
 
   return (
     <section className="mapCard uiCard">
-      <SectionHeader eyebrow="Карта" title="Карта объектов по репостам" description="Только объекты из текущего Telegram-топа" />
+      <SectionHeader eyebrow="Карта" title="Карта объектов по репостам" description="Объекты из текущего Telegram-топа" />
       {mapped.length ? (
         <MapContainer center={[41.7151, 44.8271]} zoom={12} scrollWheelZoom={false} className="compactMap" aria-label="Карта объектов по репостам">
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -35,7 +34,7 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
                 <Popup className="propertyPopup" minWidth={230}>
                   <div className="mapPopupCard" data-telegram-id={item.id}>
                     <b>№{rank}</b>
-                    {item.image && <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE).toString()} />}
+                    {item.image && <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} />}
                     {item.title && <strong>{item.title}</strong>}
                     {item.price !== null && <div>${item.price.toLocaleString('en-US')}</div>}
                     {(item.area !== null || item.district || item.rooms !== null) && <small>{[item.area !== null ? `${item.area} м²` : '', item.district, item.rooms !== null ? `${item.rooms} спальни` : ''].filter(Boolean).join(' · ')}</small>}
@@ -51,7 +50,7 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
       ) : (
         <EmptyStateCard title="Нет объектов с координатами" text="Объекты появятся на карте после добавления подтверждённых координат в Telegram-рейтинг." />
       )}
-      <p className="mapCoverage">На карте отображаются {mapped.length} из {items.length} объектов с координатами</p>
+      <p className="mapCoverage">На карте отображаются {mapped.length} из {items.length} объектов</p>
     </section>
   );
 }
