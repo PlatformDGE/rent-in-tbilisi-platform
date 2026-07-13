@@ -20,7 +20,7 @@ function nextLevel(percent: number) {
 }
 
 export function buildAgentWorkday(agent: Agent | undefined, properties: Property[], deals: Deal[], publications: Publication[]): WorkdayTask[] {
-  const agentName = agent?.name || 'David Tibelashvili';
+  const agentName = agent?.name || '';
   const agentProperties = properties.filter((property) => property.agent === agentName);
   const activeProperties = agentProperties.filter((property) => !['Archived', 'Rented', 'Sold'].includes(property.status));
   const withoutMedia = activeProperties.filter(

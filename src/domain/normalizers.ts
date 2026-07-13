@@ -133,11 +133,6 @@ export function normalizeSource(value: unknown) {
   return sourceOptions.includes(source) ? source : 'Other';
 }
 
-export function mergeById<T extends { id: string }>(saved: T[], seeds: T[]) {
-  const ids = new Set(saved.map((item) => item.id));
-  return [...saved, ...seeds.filter((item) => !ids.has(item.id))];
-}
-
 export function normalizeProperty(property: Partial<Property> & Record<string, unknown>, index: number): Property {
   const legacyPhoto = typeof property.photoUrl === 'string' && property.photoUrl ? property.photoUrl : '';
   const photos = Array.isArray(property.photos)
@@ -207,7 +202,7 @@ export function normalizeProperty(property: Partial<Property> & Record<string, u
     clientCommission: '0%',
     ownerCommission: String(property.ownerCommission || '50%'),
     taxIncluded: normalizeBoolean(property.taxIncluded),
-    agent: String(property.agent || 'David Tibelashvili'),
+    agent: String(property.agent || ''),
     operator: String(property.operator || 'Mari'),
     publicationContact: String(property.publicationContact || '@David_Tibelashvili'),
     owner: String(property.owner || ''),
@@ -255,7 +250,7 @@ export function normalizePublication(publication: Partial<Publication>, index: n
     propertyId: publication.propertyId || '',
     propertyTitle: publication.propertyTitle || 'Untitled object',
     date: publication.date || new Date().toISOString(),
-    author: publication.author || 'Demo user',
+    author: publication.author || '',
     channel,
     status: statusMap[String(publication.status)] || 'Draft',
     text: publication.text || '',

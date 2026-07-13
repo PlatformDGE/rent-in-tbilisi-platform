@@ -1,49 +1,47 @@
 import { divIcon } from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import { Link } from 'react-router-dom';
 
-import type { Property } from '../domain/types';
-import { formatPrice, getMainPhoto, statusClassName } from '../domain/formatters';
-import { getPropertyCoordinates } from '../services/propertyCoordinates';
+import type { TelegramItem } from './TelegramTop';
 import { EmptyStateCard, SectionHeader } from './ui';
 
-type RepostLookup = Record<string, number>;
+const TELEGRAM_ASSET_BASE = 'https://platformdge.github.io/-rentintbilisi-crm/';
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character] || character);
+function hasCoordinates(item: TelegramItem) {
+  return typeof item.latitude === 'number' && Number.isFinite(item.latitude)
+    && item.latitude >= -90 && item.latitude <= 90
+    && typeof item.longitude === 'number' && Number.isFinite(item.longitude)
+    && item.longitude >= -180 && item.longitude <= 180;
 }
 
-export function CompactMap({ properties, reposts = {} }: { properties: Property[]; reposts?: RepostLookup }) {
-  const mapped = properties.flatMap((property) => {
-    const coordinates = getPropertyCoordinates(property);
-    return coordinates ? [{ property, coordinates }] : [];
-  });
+export function CompactMap({ items }: { items: TelegramItem[] }) {
+  const mapped = items.filter(hasCoordinates);
 
   return (
     <section className="mapCard uiCard">
-      <SectionHeader eyebrow="Карта объектов" title="Локации" description={`${mapped.length} объектов с координатами`} />
+      <SectionHeader eyebrow="Карта" title="Карта объектов по репостам" description="Только объекты из текущего Telegram-топа" />
       {mapped.length ? (
-        <MapContainer center={[41.7151, 44.8271]} zoom={12} scrollWheelZoom={false} className="compactMap" aria-label="Карта объектов">
+        <MapContainer center={[41.7151, 44.8271]} zoom={12} scrollWheelZoom={false} className="compactMap" aria-label="Карта объектов по репостам">
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {mapped.map(({ property, coordinates }, index) => {
-            const photo = getMainPhoto(property);
+          {mapped.map((item) => {
+            const rank = items.findIndex((candidate) => candidate.id === item.id) + 1;
             const marker = divIcon({
               className: 'propertyDivIcon',
-              html: `<span>${escapeHtml(property.price ? `${property.currency}${property.price}` : String(index + 1))}</span>`,
-              iconSize: [58, 30],
-              iconAnchor: [29, 30],
+              html: `<span>№${rank}</span>`,
+              iconSize: [42, 30],
+              iconAnchor: [21, 30],
             });
             return (
-              <Marker icon={marker} key={property.id} position={[coordinates.latitude, coordinates.longitude]}>
+              <Marker icon={marker} key={item.id} position={[item.latitude as number, item.longitude as number]}>
                 <Popup className="propertyPopup" minWidth={230}>
-                  <div className="mapPopupCard">
-                    {photo && <img alt="" src={photo.src} />}
-                    <span className={statusClassName(property.status)}>{property.status}</span>
-                    <strong>{property.titleRu || property.address}</strong>
-                    <small>{property.address} · {property.district}</small>
-                    <div>{formatPrice(property)} · {property.area || '—'} м²</div>
-                    {reposts[property.id] !== undefined && <b>↗ {reposts[property.id]} репостов</b>}
-                    <Link to={`/properties/${property.id}`}>Открыть объект</Link>
+                  <div className="mapPopupCard" data-telegram-id={item.id}>
+                    <b>№{rank}</b>
+                    {item.image && <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE).toString()} />}
+                    {item.title && <strong>{item.title}</strong>}
+                    {item.price !== null && <div>${item.price.toLocaleString('en-US')}</div>}
+                    {(item.area !== null || item.district || item.rooms !== null) && <small>{[item.area !== null ? `${item.area} м²` : '', item.district, item.rooms !== null ? `${item.rooms} спальни` : ''].filter(Boolean).join(' · ')}</small>}
+                    {(item.metro || item.floor) && <small>{[item.metro ? `Метро: ${item.metro}` : '', item.floor ? `Этаж: ${item.floor}` : ''].filter(Boolean).join(' · ')}</small>}
+                    <b>↗ {item.daily_reposts} репостов</b>
+                    <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>Открыть пост</a>
                   </div>
                 </Popup>
               </Marker>
@@ -51,8 +49,9 @@ export function CompactMap({ properties, reposts = {} }: { properties: Property[
           })}
         </MapContainer>
       ) : (
-        <EmptyStateCard title="На карте пока нет объектов" text="Добавьте координаты объектам, чтобы увидеть их на карте" />
+        <EmptyStateCard title="Нет объектов с координатами" text="Объекты появятся на карте после добавления подтверждённых координат в Telegram-рейтинг." />
       )}
+      <p className="mapCoverage">На карте отображаются {mapped.length} из {items.length} объектов с координатами</p>
     </section>
   );
 }

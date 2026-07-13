@@ -16,6 +16,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Map,
   MessageCircle,
   Moon,
   Pencil,
@@ -86,7 +87,7 @@ import {
   teamRoles,
   THEME_STORAGE_KEY,
 } from './domain/constants';
-import { loadAgents, loadBrandSettings, loadClients, loadDeals, loadOwners, loadProperties, loadPublications, readStorage } from './domain/demoRepository';
+import { loadAgents, loadBrandSettings, loadClients, loadDeals, loadOwners, loadProperties, loadPublications, readStorage } from './domain/localRepository';
 import { extractHashtags, formatPrice, getMainPhoto, initials, pricePerM2, publicationStatusClassName, safeNumber, statusClassName } from './domain/formatters';
 import { parseCsvProperties, parseTelegramPostToProperty } from './domain/importers';
 import { normalizeProperty } from './domain/normalizers';
@@ -117,8 +118,7 @@ import type {
   Toast,
 } from './domain/types';
 import { CompactMap } from './components/CompactMap';
-import { TelegramTop } from './components/TelegramTop';
-import { MetricCard, SectionHeader } from './components/ui';
+import { TelegramTop, useTelegramTop } from './components/TelegramTop';
 import { extractCoordinatesFromMapLink } from './services/propertyCoordinates';
 
 type CrmContextValue = {
@@ -156,9 +156,11 @@ function AppProvider({ children }: { children: ReactNode }) {
   const [deals] = useState<Deal[]>(loadDeals);
   const [publications, setPublications] = useState<Publication[]>(loadPublications);
   const [brandSettings, setBrandSettingsState] = useState<BrandSettings>(() => loadBrandSettings(defaultBrandSettings));
-  const [session, setSessionState] = useState<Session | null>(() =>
-    readStorage<Session | null>(SESSION_STORAGE_KEY, null),
-  );
+  const [session, setSessionState] = useState<Session | null>(() => {
+    const savedSession = readStorage<Session | null>(SESSION_STORAGE_KEY, null);
+    const legacyDemoNames = ['David Tibelashvili', 'Mari Operator', 'Nino Beridze', 'Ana Lomidze', 'Sergi Matchavariani'];
+    return savedSession && !legacyDemoNames.includes(savedSession.name) ? savedSession : null;
+  });
   const [theme, setThemeState] = useState<ThemeMode>(() => readStorage<ThemeMode>(THEME_STORAGE_KEY, 'light'));
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -278,6 +280,10 @@ export function App() {
             <Route path="/owners" element={<OwnersPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/deals" element={<DealsPage />} />
+            <Route path="/contracts" element={<DealsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/map" element={<TelegramMapPage />} />
+            <Route path="/account" element={<PersonalCabinetPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/districts" element={<DistrictsPage />} />
             <Route path="/publications" element={<PublicationsPage />} />
@@ -293,16 +299,9 @@ export function App() {
 
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={compact ? 'logo compactLogo' : 'logo'}>
-      <span className="logoMark" aria-label="Rent in Tbilisi logo placeholder">
-        <span>RENT</span>
-        <i />
-        <span>TBILISI</span>
-      </span>
-      <div>
-        <strong>Molecula</strong>
-        <span>Rent in Tbilisi</span>
-      </div>
+    <div className={compact ? 'textBrand compactLogo' : 'textBrand'}>
+      <strong>Rent in Tbilisi</strong>
+      <span>Platform</span>
     </div>
   );
 }
@@ -323,7 +322,7 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
 function LoginPage() {
   const { session, setSession, setTheme, theme } = useCrm();
   const navigate = useNavigate();
-  const [name, setName] = useState('David Tibelashvili');
+  const [name, setName] = useState('');
   const [role, setRole] = useState<AuthRole>('Администратор');
 
   useEffect(() => {
@@ -341,9 +340,9 @@ function LoginPage() {
       <section className="loginPanel">
         <Logo />
         <div className="loginCopy">
-          <p className="eyebrow">Private real estate operating system</p>
-          <h1>Операционная система доверия для Rent in Tbilisi</h1>
-          <p>Объекты, публикации, команда и сделки в одном премиальном рабочем пространстве.</p>
+          <p className="eyebrow">Rent in Tbilisi Platform</p>
+          <h1>Рабочее пространство Rent in Tbilisi</h1>
+          <p>Войдите, чтобы работать с реальными данными платформы.</p>
         </div>
         <form className="loginForm" onSubmit={login}>
           <label>
@@ -360,7 +359,7 @@ function LoginPage() {
           </label>
           <button className="primaryButton fullWidth" type="submit">
             <KeyRound size={18} />
-            Войти в Molecula CRM
+            Войти в платформу
           </button>
         </form>
         <button className="ghostButton fullWidth" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} type="button">
@@ -391,20 +390,17 @@ function ProtectedLayout() {
         </Link>
 
         <nav className="navigation" aria-label="Основные разделы">
-          <NavItem icon={LayoutDashboard} label="Dashboard" to="/" />
+          <NavItem icon={LayoutDashboard} label="Главная" to="/" />
           <NavItem icon={Building2} label="Объекты" to="/properties" />
-          <NavItem icon={Plus} label="Добавить объект" to="/properties/new" />
-          <NavItem icon={Smartphone} label="Предпросмотр поста" to="/post-preview" />
-          <NavItem icon={MessageCircle} label="Telegram" to="/telegram" />
-          <NavItem icon={UsersRound} label="Агенты" to="/agents" />
           <NavItem icon={Home} label="Собственники" to="/owners" />
           <NavItem icon={UserRound} label="Клиенты" to="/clients" />
-          <NavItem icon={Handshake} label="Сделки" to="/deals" />
+          <NavItem icon={FileText} label="Отчёты" to="/reports" />
+          <NavItem icon={Handshake} label="Договоры" to="/contracts" />
+          <NavItem icon={UsersRound} label="Агенты" to="/agents" />
+          <NavItem icon={Map} label="Карта" to="/map" />
           <NavItem icon={BarChart3} label="Аналитика" to="/analytics" />
-          <NavItem icon={Building2} label="Районы и цены" to="/districts" />
-          <NavItem icon={FileText} label="Публикации" to="/publications" />
-          <NavItem icon={Upload} label="Импорт" to="/import" />
           <NavItem icon={Settings} label="Настройки" to="/settings" />
+          <NavItem icon={UserRound} label="Личный кабинет" to="/account" />
         </nav>
 
         <div className="sidebarFooter">
@@ -451,7 +447,7 @@ function PageFrame({ actions, children }: { actions?: ReactNode; children: React
     <div className="pageFrame">
       <header className="moleculaHeader">
         <div>
-          <p className="eyebrow">Molecula CRM / Rent in Tbilisi</p>
+          <p className="eyebrow">Rent in Tbilisi Platform</p>
           <h1>{title}</h1>
         </div>
         <div className="headerActions">
@@ -478,175 +474,67 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith('/agents')) return 'Агенты';
   if (pathname.startsWith('/owners')) return 'Собственники';
   if (pathname.startsWith('/clients')) return 'Клиенты';
+  if (pathname.startsWith('/reports')) return 'Отчёты';
+  if (pathname.startsWith('/contracts')) return 'Договоры';
+  if (pathname.startsWith('/map')) return 'Карта';
+  if (pathname.startsWith('/account')) return 'Личный кабинет';
   if (pathname.startsWith('/deals')) return 'Сделки';
   if (pathname.startsWith('/analytics')) return 'Аналитика';
   if (pathname.startsWith('/districts')) return 'Районы и цены';
   if (pathname.startsWith('/publications')) return 'Публикации';
   if (pathname.startsWith('/import')) return 'Импорт объектов';
   if (pathname.startsWith('/settings')) return 'Настройки бренда';
-  return 'Dashboard';
+  return 'Главная';
 }
 
 function DashboardPage() {
-  const { agents, clients, deals, properties, publications, session } = useCrm();
-  const [activeMetric, setActiveMetric] = useState<string | null>(null);
-  const [dashboardSearch, setDashboardSearch] = useState('');
-  const [telegramReposts, setTelegramReposts] = useState(0);
-  const stats = getPropertyStats(properties);
-  const currentAgent = agents.find((agent) => agent.name === session?.name) || agents.find((agent) => agent.name === 'David Tibelashvili');
-  const workdayTasks = buildAgentWorkday(currentAgent, properties, deals, publications);
-  const recentProperties = [...properties]
-    .filter((property) => `${property.titleRu} ${property.titleEn} ${property.address} ${property.district}`.toLowerCase().includes(dashboardSearch.toLowerCase()))
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 4);
-  const cards = [
-    { label: 'Всего объектов', value: stats.total, icon: Building2 },
-    { label: 'Свободные объекты', value: stats.active, icon: KeyRound },
-    { label: 'Активные клиенты', value: clients.filter((client) => !/закрыт|потерян/i.test(client.status)).length, icon: UserRound },
-    { label: 'Задачи', value: workdayTasks.reduce((sum, task) => sum + safeNumber(task.value), 0), icon: Check },
-    { label: 'Сделки', value: deals.length, icon: Handshake },
-    { label: 'Telegram-репосты', value: telegramReposts, icon: MessageCircle },
-  ];
-  const metricItems = (() => {
-    if (!activeMetric) return [];
-    if (activeMetric === 'Всего объектов') return properties.map((property) => ({ title: property.titleRu || property.address, meta: property.id, to: `/properties/${property.id}` }));
-    if (activeMetric === 'Активные') {
-      return properties
-        .filter((property) => !['Rented', 'Sold', 'Archived'].includes(property.status))
-        .map((property) => ({ title: property.titleRu || property.address, meta: property.status, to: `/properties/${property.id}` }));
-    }
-    if (activeMetric === 'На рекламе') {
-      return properties
-        .filter((property) => property.status === 'On Advertising')
-        .map((property) => ({ title: property.titleRu || property.address, meta: property.agent, to: `/properties/${property.id}` }));
-    }
-    if (activeMetric === 'Эксклюзивы') {
-      return properties
-        .filter((property) => property.exclusive)
-        .map((property) => ({ title: property.titleRu || property.address, meta: property.district, to: `/properties/${property.id}` }));
-    }
-    if (activeMetric.includes('Сдано')) {
-      return properties
-        .filter((property) => property.status === 'Rented')
-        .map((property) => ({ title: property.titleRu || property.address, meta: formatPrice(property), to: `/properties/${property.id}` }));
-    }
-    if (activeMetric.includes('Продано')) {
-      return properties
-        .filter((property) => property.status === 'Sold')
-        .map((property) => ({ title: property.titleRu || property.address, meta: formatPrice(property), to: `/properties/${property.id}` }));
-    }
-    if (activeMetric.includes('Добавлено')) {
-      return properties
-        .filter((property) => Date.parse(property.createdAt) >= Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .map((property) => ({ title: property.titleRu || property.address, meta: new Date(property.createdAt).toLocaleDateString('ru-RU'), to: `/properties/${property.id}` }));
-    }
-    if (activeMetric.includes('Комиссия')) {
-      return deals.map((deal) => ({ title: `${deal.propertyId} · ${deal.agent}`, meta: `${deal.commission} · ${deal.status}`, to: '/deals' }));
-    }
-    if (activeMetric === 'Активные агенты') {
-      return agents
-        .filter((agent) => agent.isActive)
-        .map((agent) => ({ title: agent.name, meta: `${agent.role} · ${agent.commissionPercent}%`, to: `/agents/${agent.id}` }));
-    }
-    if (activeMetric.includes('Публикации')) {
-      return publications.map((publication) => ({
-        title: publication.propertyTitle,
-        meta: `${publication.channel} · ${publication.status}`,
-        to: '/publications',
-      }));
-    }
-    return properties.map((property) => ({ title: property.titleRu || property.address, meta: property.status, to: `/properties/${property.id}` }));
-  })();
+  const telegram = useTelegramTop();
 
   return (
-    <PageFrame
-      actions={
-        <div className="quickActions">
-          <Link className="secondaryButton" to="/post-preview">
-            <Smartphone size={18} />
-            Создать пост
-          </Link>
-          <Link className="secondaryButton" to="/analytics">
-            <BarChart3 size={18} />
-            Открыть аналитику
-          </Link>
-          <Link className="primaryButton" to="/properties/new">
-            <Plus size={18} />
-            Добавить объект
-          </Link>
-        </div>
-      }
-    >
-      <section className="catalogHero uiCard">
-        <div>
-          <p className="eyebrow">Каталог недвижимости</p>
-          <h2>Вся работа с объектами — в одном пространстве</h2>
-          <p>Найдите объект, проверьте показатели, откройте карту или перейдите к публикациям команды.</p>
-        </div>
-        <label className="searchBox dashboardSearch"><Search size={19} /><input value={dashboardSearch} onChange={(event) => setDashboardSearch(event.target.value)} placeholder="Поиск по адресу, району или названию" /></label>
-        <div className="quickFilterRow">
-          <Link to="/properties">Все объекты</Link><Link to="/properties">В аренду</Link><Link to="/properties">На продажу</Link><Link to="/analytics">Аналитика</Link>
-        </div>
+    <PageFrame>
+      <section className="dashboardIntro uiCard">
+        <p className="eyebrow">Rent in Tbilisi Platform</p>
+        <h2>Telegram-рейтинг объектов</h2>
+        <p>Актуальные объекты, отсортированные по количеству репостов за текущий период.</p>
       </section>
-
-      <section className="dashboardMetricGrid">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <button className="metricCardButton" key={card.label} onClick={() => setActiveMetric(card.label)} type="button">
-              <MetricCard icon={<Icon size={19} />} label={card.label} value={card.value} />
-            </button>
-          );
-        })}
-      </section>
-
       <section className="dashboardFeatureGrid">
-        <TelegramTop onTotalChange={setTelegramReposts} />
-        <CompactMap properties={properties} />
+        <TelegramTop {...telegram} />
+        <CompactMap items={telegram.items} />
       </section>
+    </PageFrame>
+  );
+}
 
-      <section className="workspace uiCard">
-        <SectionHeader eyebrow="Agent Workday" title="Рабочий день агента" description="Звонки, медиа, публикации и договоры, которые требуют внимания." actions={<Link className="secondaryButton" to={currentAgent ? `/agents/${currentAgent.id}` : '/agents'}><UserRound size={18} />Профиль агента</Link>} />
-        <div className="workdayGrid">
-          {workdayTasks.map((task) => <Link className={`workdayTask workday-${task.tone}`} key={task.id} to={task.to}><span>{task.title}</span><strong>{task.value}</strong><small>{task.description}</small></Link>)}
-        </div>
-      </section>
+function TelegramMapPage() {
+  const telegram = useTelegramTop();
+  return <PageFrame><CompactMap items={telegram.items} /></PageFrame>;
+}
 
-      {activeMetric && (
-        <div className="modalBackdrop" role="dialog" aria-modal="true">
-          <section className="confirmDialog dashboardDrawer">
-            <button className="iconButton closeButton" onClick={() => setActiveMetric(null)} type="button" aria-label="Закрыть">
-              <X size={18} />
-            </button>
-            <h2>{activeMetric}</h2>
-            <p>Быстрый список для перехода из KPI в рабочую карточку.</p>
-            <div className="drawerList">
-              {metricItems.length === 0 ? (
-                <span>Нет данных для этого показателя</span>
-              ) : (
-                metricItems.slice(0, 18).map((item, index) => (
-                  <Link key={`${item.title}-${index}`} to={item.to} onClick={() => setActiveMetric(null)}>
-                    <strong>{item.title}</strong>
-                    <span>{item.meta || '-'}</span>
-                  </Link>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-      )}
+function ReportsPage() {
+  return <PageFrame><section className="workspace"><EmptyState title="Отчётов пока нет" text="Добавьте реальные данные, чтобы сформировать отчёт." /></section></PageFrame>;
+}
 
-      <section className="workspace uiCard">
-        <div className="sectionHeader">
-          <div>
-            <h2>Последние добавленные объекты</h2>
-            <p>Быстрый контроль объектов перед рекламой и публикацией.</p>
+function PersonalCabinetPage() {
+  const { agents, deals, properties, publications, session } = useCrm();
+  const agent = agents.find((item) => item.name === session?.name);
+  const personalProperties = properties.filter((property) => property.agent === session?.name);
+  const personalDeals = deals.filter((deal) => deal.agent === session?.name);
+  const personalPublications = publications.filter((publication) => publication.author === session?.name);
+  const tasks = buildAgentWorkday(agent, personalProperties, personalDeals, personalPublications);
+  const hasData = Boolean(agent || personalProperties.length || personalDeals.length || personalPublications.length);
+
+  return (
+    <PageFrame>
+      {!hasData ? (
+        <section className="workspace"><EmptyState title="Личных данных пока нет" text="Задачи, сделки, показы и личные показатели появятся после добавления реальных данных." /></section>
+      ) : (
+        <section className="workspace">
+          <div className="sectionHeader"><div><h2>{session?.name}</h2><p>Личные задачи и рабочие показатели.</p></div></div>
+          <div className="workdayGrid">
+            {tasks.map((task) => <Link className={`workdayTask workday-${task.tone}`} key={task.id} to={task.to}><span>{task.title}</span><strong>{task.value}</strong><small>{task.description}</small></Link>)}
           </div>
-          <Link className="secondaryButton" to="/properties">
-            Все объекты
-          </Link>
-        </div>
-        <PropertyCardGrid properties={recentProperties} />
-      </section>
+        </section>
+      )}
     </PageFrame>
   );
 }
@@ -929,7 +817,7 @@ function PropertyDetailPage() {
       propertyId: property.id,
       propertyTitle: property.titleEn || property.titleRu || property.address,
       date: new Date().toISOString(),
-      author: session?.name || property.agent || 'Molecula user',
+      author: session?.name || property.agent || 'Пользователь',
       channel: 'Demo',
       status: 'Copied',
       text: postText,
@@ -959,7 +847,7 @@ function PropertyDetailPage() {
         propertyId: property.id,
         propertyTitle: property.titleEn || property.titleRu || property.address,
         date: new Date().toISOString(),
-        author: session?.name || property.agent || 'Molecula user',
+        author: session?.name || property.agent || 'Пользователь',
         channel,
         status: channel === 'Test' ? 'Test Published' : 'Production Published',
         text: postText,
@@ -974,7 +862,7 @@ function PropertyDetailPage() {
         propertyId: property.id,
         propertyTitle: property.titleEn || property.titleRu || property.address,
         date: new Date().toISOString(),
-        author: session?.name || property.agent || 'Molecula user',
+        author: session?.name || property.agent || 'Пользователь',
         channel,
         status: 'Error',
         text: postText,
@@ -1826,7 +1714,7 @@ function PostPreviewPage() {
       propertyId: selectedProperty.id,
       propertyTitle: selectedProperty.titleEn || selectedProperty.titleRu || selectedProperty.address,
       date: new Date().toISOString(),
-      author: session?.name || selectedProperty.agent || 'Molecula user',
+      author: session?.name || selectedProperty.agent || 'Пользователь',
       channel,
       status,
       text: postText,
@@ -2132,16 +2020,13 @@ function AgentsPage() {
       </section>
       <section className="workspace">
         <div className="sectionHeader">
-          <div>
-            <h2>Команда Molecula</h2>
-            <p>Роли, активность, сделки, эксклюзивы и комиссия.</p>
-          </div>
+          <div><h2>Команда</h2><p>Только добавленные сотрудники и их рабочие данные.</p></div>
         </div>
-        <div className="agentGrid">
-          {agents.map((agent) => (
+        {agents.length === 0 ? <EmptyState title="Агентов пока нет" text="Добавьте реальные данные сотрудников." /> : (
+          <div className="agentGrid">{agents.map((agent) => (
             <AgentCard agent={agent} key={agent.id} />
-          ))}
-        </div>
+          ))}</div>
+        )}
       </section>
     </PageFrame>
   );
@@ -2340,7 +2225,7 @@ function DealsPage() {
         deal.date,
         deal.status,
       ])}
-      title="Сделки"
+      title="Договоры"
     />
   );
 }
@@ -2633,36 +2518,8 @@ function EntityTable({ columns, rows, title }: { columns: string[]; rows: string
 function ImportPage() {
   const { showToast, upsertProperty } = useCrm();
   const navigate = useNavigate();
-  const [telegramText, setTelegramText] = useState(`#Saburtalo 🚇 #MCUniversity
-📍14b Shalva Nutsubidze Street
-
-❗️#Exclusive
-
-🏢 #2Bed #Apartment for #Rent
-✨ #NewBuilding | #White
-🏠105 sq.m | 5/12 Floor |
-#CentralHeating | #Shower
-
-✅ #Balcony ✅ #WiFi ✅ #TV
-✅ #Stove ✅ #VacuumCleaner
-✅ #Elevator ✅ #Oven
-✅ #ParkingPlace
-✅ #Conditioner
-
-👫Tenants: 1-4
-🐕Pets: #ByAgreement
-
-💰1000$ + Deposit 1000$
-0% Commission
-#Price900to1200
-
-➡️🏢 @David_Tibelashvili |
-+995 599 20 67 16 #Sergi
-
-📍APARTMENTS ON MAP📍`);
-  const [csvText, setCsvText] = useState(
-    'address,district,metro,deal_type,price,area,bedrooms,floor,total_floors,status,agent,owner,phone,telegram,photo_url\n14b Shalva Nutsubidze Street,Saburtalo,MCUniversity,Rent,1000,105,2,5,12,On Advertising,David Tibelashvili,Owner,+995 599 20 67 16,@owner,',
-  );
+  const [telegramText, setTelegramText] = useState('');
+  const [csvText, setCsvText] = useState('');
   const parsedTelegram = useMemo(() => parseTelegramPostToProperty(telegramText), [telegramText]);
   const csvProperties = useMemo(() => parseCsvProperties(csvText), [csvText]);
 

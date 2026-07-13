@@ -34,9 +34,15 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Download current Telegram ranking
+        run: curl --fail --location --retry 3 --output dist/telegram-top10.json https://platformdge.github.io/-rentintbilisi-crm/telegram-top10.json
+
+      - name: Normalize Telegram map fields
+        run: node scripts/prepare-telegram-top10.mjs dist/telegram-top10.json
+
       - name: Add SPA entry points and fallback
         run: |
-          for route in login properties properties/new post-preview telegram agents owners clients deals analytics districts publications import settings; do
+          for route in login properties properties/new post-preview telegram agents owners clients deals contracts reports map account analytics districts publications import settings; do
             mkdir -p "dist/$route"
             cp dist/index.html "dist/$route/index.html"
           done
