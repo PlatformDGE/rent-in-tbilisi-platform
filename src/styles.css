@@ -1984,12 +1984,14 @@ textarea,
   padding: 6px 9px;
   position: absolute;
 }
-.channelAgeBadge { background: #eef4ff; color: var(--accent); }
+.channelAgeBadgeFeatured { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(29, 53, 96, 0.24); }
+.channelAgeBadgeNeutral { background: rgba(255, 255, 255, 0.9); color: #526174; padding: 5px 8px; }
 .rentedBadge { background: #16805d; color: #fff; letter-spacing: 0.08em; }
 .recentlyRented { margin-top: 20px; }
 .rentedCardGrid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .rentedPropertyCard { border-color: color-mix(in srgb, #16805d 28%, var(--border)); }
 .rentedDuration { color: #16805d; display: block; font-size: 13px; margin-top: 9px; }
+.lifecycleStatusText { color: #16805d; font-weight: 750; }
 
 .telegramCardBody { padding: 14px; }
 .telegramCardBody h3 { font-size: 15px; margin: 6px 0; }

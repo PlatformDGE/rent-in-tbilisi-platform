@@ -26,9 +26,16 @@ export type TelegramItem = {
   firstSeenAt?: string;
   lastSeenAt?: string;
   daysOnChannel?: number;
-  lifecycleStatus?: 'active' | 'rented' | 'removed';
+  lifecycleStatus?: 'active' | 'rented' | 'sold' | 'removed';
   rentedAt?: string | null;
   daysUntilRented?: number | null;
+  soldAt?: string | null;
+  daysUntilSold?: number | null;
+  daysUntilClosed?: number | null;
+  closedAt?: string | null;
+  confirmationTelegramUrl?: string | null;
+  sourceTelegramUrl?: string | null;
+  sourceTelegramMessageId?: string | null;
   propertyKey?: string;
 };
 
@@ -48,8 +55,13 @@ function dayWord(value: number) {
   return 'дней';
 }
 
-function channelLabel(days: number) {
-  return days <= 1 ? 'Сегодня на канале' : `${days} ${dayWord(days)} на канале`;
+function channelLabel(firstSeenAt: string, now: number) {
+  const elapsedMinutes = Math.max(Math.floor((now - new Date(firstSeenAt).getTime()) / 60_000), 0);
+  if (elapsedMinutes === 0) return 'Сегодня';
+  if (elapsedMinutes < 60) return `${elapsedMinutes} мин`;
+  if (elapsedMinutes < 24 * 60) return `${Math.floor(elapsedMinutes / 60)} ч ${elapsedMinutes % 60} мин`;
+  if (elapsedMinutes < 7 * 24 * 60) return `${Math.floor(elapsedMinutes / (24 * 60))} д ${Math.floor((elapsedMinutes % (24 * 60)) / 60)} ч`;
+  return `${Math.floor(elapsedMinutes / (24 * 60))} дней`;
 }
 
 function isTelegramPostUrl(value: string) {
@@ -95,7 +107,7 @@ export function useTelegramTop() {
     .slice(0, 10), [payload]);
 
   const recentlyRented = useMemo(() => (Array.isArray(payload?.recentlyRented) ? payload.recentlyRented : [])
-    .filter((item) => item?.lifecycleStatus === 'rented' && typeof item.post_url === 'string' && isTelegramPostUrl(item.post_url))
+    .filter((item) => ['rented', 'sold'].includes(item?.lifecycleStatus ?? '') && typeof item.post_url === 'string' && isTelegramPostUrl(item.post_url))
     .slice(0, 5), [payload]);
 
   return { error, items, loading, recentlyRented, reload };
@@ -104,6 +116,11 @@ export function useTelegramTop() {
 type TelegramTopProps = ReturnType<typeof useTelegramTop>;
 
 export function TelegramTop({ error, items, loading, reload }: TelegramTopProps) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   return (
     <section className="telegramTop uiCard">
       <SectionHeader
@@ -119,13 +136,15 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
       ) : (
         <div className="telegramCardGrid">
           {items.map((item, index) => (
-            <article className="telegramPropertyCard" data-telegram-id={item.id} key={item.id}>
+            <article className="telegramPropertyCard" data-lifecycle-status="active" data-telegram-id={item.id} key={item.id}>
               <div className="telegramMedia">
                 {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
                 <span className="rankBadge">№{index + 1}</span>
                 <span className="repostBadge">↗ {item.repostCount} {pluralizeReposts(item.repostCount)}</span>
-                {index < 3 && typeof item.daysOnChannel === 'number' && (
-                  <span className="channelAgeBadge">{channelLabel(item.daysOnChannel)}</span>
+                {item.firstSeenAt && (
+                  <span className={`channelAgeBadge ${index < 3 ? 'channelAgeBadgeFeatured' : 'channelAgeBadgeNeutral'}`}>
+                    {channelLabel(item.firstSeenAt, now)}
+                  </span>
                 )}
               </div>
               <div className="telegramCardBody">
@@ -135,6 +154,7 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
                   <p>{[item.area !== null ? `${item.area} м²` : '', item.rooms !== null ? `${item.rooms} спальни` : '', item.district].filter(Boolean).join(' · ')}</p>
                 )}
                 {(item.metro || item.floor) && <p>{[item.metro ? `Метро: ${item.metro}` : '', item.floor ? `Этаж: ${item.floor}` : ''].filter(Boolean).join(' · ')}</p>}
+                <p className="lifecycleStatusText">Статус: Активен</p>
                 <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
                   Открыть пост <ExternalLink size={15} />
                 </a>
@@ -150,23 +170,28 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
 export function RecentlyRented({ items }: { items: TelegramItem[] }) {
   return (
     <section className="recentlyRented uiCard">
-      <SectionHeader eyebrow="Lifecycle" title="Недавно сданы" description="Только объекты с подтверждённым событием сдачи" />
+      <SectionHeader eyebrow="Lifecycle" title="Недавно закрыты" description="Только объекты с подтверждённой арендой или продажей" />
       {items.length === 0 ? (
-        <EmptyStateCard title="Подтверждённых сдач пока нет" text="Объекты появятся здесь после подтверждения сдачи в Telegram или CRM." />
+        <EmptyStateCard title="Подтверждённых сделок пока нет" text="Объекты появятся здесь после подтверждения аренды или продажи в Telegram или CRM." />
       ) : (
         <div className="telegramCardGrid rentedCardGrid">
           {items.map((item) => (
-            <article className="telegramPropertyCard rentedPropertyCard" data-telegram-id={item.id} key={item.propertyKey ?? item.id}>
+            <article className="telegramPropertyCard rentedPropertyCard" data-lifecycle-status={item.lifecycleStatus} data-telegram-id={item.id} key={item.propertyKey ?? item.id}>
               <div className="telegramMedia">
                 {item.image ? <img alt={item.title || 'Сданный объект'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
-                <span className="rentedBadge">СДАНО</span>
+                <span className="rentedBadge">{item.lifecycleStatus === 'sold' ? 'ПРОДАНО' : 'СДАНО'}</span>
               </div>
               <div className="telegramCardBody">
                 {item.price !== null && <div className="telegramPrice">${item.price.toLocaleString('en-US')}</div>}
                 {item.title && <h3>{item.title}</h3>}
                 {item.district && <p>{item.district}</p>}
-                {typeof item.daysUntilRented === 'number' && <strong className="rentedDuration">Сдано за {item.daysUntilRented} {dayWord(item.daysUntilRented)}</strong>}
+                {typeof item.daysUntilClosed === 'number' && (
+                  <strong className="rentedDuration">
+                    {item.lifecycleStatus === 'sold' ? 'Продано' : 'Сдано'} за {item.daysUntilClosed} {dayWord(item.daysUntilClosed)}
+                  </strong>
+                )}
                 <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer">Открыть исходный пост <ExternalLink size={15} /></a>
+                {item.confirmationTelegramUrl && <a className="telegram-post-link" href={item.confirmationTelegramUrl} target="_blank" rel="noopener noreferrer">Открыть подтверждение <ExternalLink size={15} /></a>}
               </div>
             </article>
           ))}
