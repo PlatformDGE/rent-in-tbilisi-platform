@@ -1977,21 +1977,24 @@ textarea,
 .channelAgeBadge,
 .rentedBadge {
   border-radius: 999px;
-  bottom: 9px;
   font-size: 10px;
   font-weight: 850;
-  left: 10px;
   padding: 6px 9px;
-  position: absolute;
 }
+.lifecycleBadgeRow { bottom: 9px; display: flex; gap: 6px; left: 10px; position: absolute; right: 10px; }
 .channelAgeBadgeFeatured { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(29, 53, 96, 0.24); }
 .channelAgeBadgeNeutral { background: rgba(255, 255, 255, 0.9); color: #526174; padding: 5px 8px; }
-.rentedBadge { background: #16805d; color: #fff; letter-spacing: 0.08em; }
+.rentedBadge { background: #16805d; bottom: 9px; color: #fff; left: 10px; letter-spacing: 0.08em; position: absolute; }
+.performanceBadge { border-radius: 999px; display: inline-flex; font-size: 10px; font-weight: 850; padding: 5px 8px; width: fit-content; }
+.performanceBadge-fast { background: #dff3e9; color: #176347; }
+.performanceBadge-normal { background: #fff0cf; color: #8a5700; }
+.performanceBadge-slow { background: #fde3e3; color: #a02d2d; }
 .recentlyRented { margin-top: 20px; }
 .rentedCardGrid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .rentedPropertyCard { border-color: color-mix(in srgb, #16805d 28%, var(--border)); }
 .rentedDuration { color: #16805d; display: block; font-size: 13px; margin-top: 9px; }
 .lifecycleStatusText { color: #16805d; font-weight: 750; }
+.lifecycleMetrics { color: var(--muted); display: grid; font-size: 12px; gap: 3px; margin-top: 7px; }
 
 .telegramCardBody { padding: 14px; }
 .telegramCardBody h3 { font-size: 15px; margin: 6px 0; }

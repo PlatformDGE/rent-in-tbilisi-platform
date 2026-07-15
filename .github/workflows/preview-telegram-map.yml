@@ -55,7 +55,7 @@ jobs:
       - name: Build Telegram map preview
         working-directory: preview
         env:
-          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-lifecycle-v2/
+          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-lifecycle-v3/
           VITE_TELEGRAM_ASSET_BASE_URL: https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-map/
         run: |
           npm ci
@@ -65,9 +65,9 @@ jobs:
 
       - name: Assemble production and isolated preview
         run: |
-          mkdir -p site/preview/telegram-lifecycle-v2
+          mkdir -p site/preview/telegram-lifecycle-v3
           cp -R production/dist/. site/
-          cp -R preview/dist/. site/preview/telegram-lifecycle-v2/
+          cp -R preview/dist/. site/preview/telegram-lifecycle-v3/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -80,7 +80,7 @@ jobs:
   deploy-preview:
     environment:
       name: github-pages
-      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-lifecycle-v2/
+      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-lifecycle-v3/
     needs: build-preview
     runs-on: ubuntu-latest
     steps:

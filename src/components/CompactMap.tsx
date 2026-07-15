@@ -5,6 +5,8 @@ import type { TelegramItem } from './TelegramTop';
 import { EmptyStateCard, SectionHeader } from './ui';
 import { TELEGRAM_ASSET_BASE_URL } from '../config/runtime';
 
+const performanceLabels = { fast: 'Быстро', normal: 'Нормально', slow: 'Завис' } as const;
+
 function hasCoordinates(item: TelegramItem) {
   return typeof item.latitude === 'number' && Number.isFinite(item.latitude)
     && item.latitude >= -90 && item.latitude <= 90
@@ -40,6 +42,10 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
                     {(item.area !== null || item.district || item.rooms !== null) && <small>{[item.area !== null ? `${item.area} м²` : '', item.district, item.rooms !== null ? `${item.rooms} спальни` : ''].filter(Boolean).join(' · ')}</small>}
                     {(item.metro || item.floor) && <small>{[item.metro ? `Метро: ${item.metro}` : '', item.floor ? `Этаж: ${item.floor}` : ''].filter(Boolean).join(' · ')}</small>}
                     <b>↗ {item.repostCount} репостов</b>
+                    {item.timerLabel && <small>На канале: {item.timerLabel}</small>}
+                    {item.performanceStatus && <small>Статус: {performanceLabels[item.performanceStatus]}</small>}
+                    <small>Лучшее место: №{item.highestRank ?? rank}</small>
+                    <small>Максимум репостов: {item.maxRepostCount ?? item.repostCount}</small>
                     <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>Открыть пост</a>
                   </div>
                 </Popup>

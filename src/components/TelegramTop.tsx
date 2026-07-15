@@ -36,6 +36,11 @@ export type TelegramItem = {
   confirmationTelegramUrl?: string | null;
   sourceTelegramUrl?: string | null;
   sourceTelegramMessageId?: string | null;
+  timerLabel?: string;
+  performanceStatus?: 'fast' | 'normal' | 'slow';
+  highestRank?: number;
+  maxRepostCount?: number;
+  currentRank?: number;
   propertyKey?: string;
 };
 
@@ -63,6 +68,8 @@ function channelLabel(firstSeenAt: string, now: number) {
   if (elapsedMinutes < 7 * 24 * 60) return `${Math.floor(elapsedMinutes / (24 * 60))} д ${Math.floor((elapsedMinutes % (24 * 60)) / 60)} ч`;
   return `${Math.floor(elapsedMinutes / (24 * 60))} дней`;
 }
+
+const performanceLabels = { fast: 'Быстро', normal: 'Нормально', slow: 'Завис' } as const;
 
 function isTelegramPostUrl(value: string) {
   return /^https:\/\/t\.me\/rent_tbilisi_ge\/\d+$/.test(value);
@@ -141,11 +148,14 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
                 {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
                 <span className="rankBadge">№{index + 1}</span>
                 <span className="repostBadge">↗ {item.repostCount} {pluralizeReposts(item.repostCount)}</span>
-                {item.firstSeenAt && (
-                  <span className={`channelAgeBadge ${index < 3 ? 'channelAgeBadgeFeatured' : 'channelAgeBadgeNeutral'}`}>
-                    {channelLabel(item.firstSeenAt, now)}
-                  </span>
-                )}
+                <div className="lifecycleBadgeRow">
+                  {item.firstSeenAt && (
+                    <span className={`channelAgeBadge ${index < 3 ? 'channelAgeBadgeFeatured' : 'channelAgeBadgeNeutral'}`}>
+                      {channelLabel(item.firstSeenAt, now)}
+                    </span>
+                  )}
+                  {item.performanceStatus && <span className={`performanceBadge performanceBadge-${item.performanceStatus}`}>{performanceLabels[item.performanceStatus]}</span>}
+                </div>
               </div>
               <div className="telegramCardBody">
                 {item.price !== null && <div className="telegramPrice">${item.price.toLocaleString('en-US')}</div>}
@@ -155,6 +165,10 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
                 )}
                 {(item.metro || item.floor) && <p>{[item.metro ? `Метро: ${item.metro}` : '', item.floor ? `Этаж: ${item.floor}` : ''].filter(Boolean).join(' · ')}</p>}
                 <p className="lifecycleStatusText">Статус: Активен</p>
+                <div className="lifecycleMetrics">
+                  <span>Лучшее место: №{item.highestRank ?? index + 1}</span>
+                  <span>Максимум репостов: {item.maxRepostCount ?? item.repostCount}</span>
+                </div>
                 <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
                   Открыть пост <ExternalLink size={15} />
                 </a>
@@ -190,6 +204,11 @@ export function RecentlyRented({ items }: { items: TelegramItem[] }) {
                     {item.lifecycleStatus === 'sold' ? 'Продано' : 'Сдано'} за {item.daysUntilClosed} {dayWord(item.daysUntilClosed)}
                   </strong>
                 )}
+                {item.performanceStatus && <span className={`performanceBadge performanceBadge-${item.performanceStatus}`}>{performanceLabels[item.performanceStatus]}</span>}
+                <div className="lifecycleMetrics">
+                  <span>Лучшее место: №{item.highestRank}</span>
+                  <span>Максимум репостов: {item.maxRepostCount}</span>
+                </div>
                 <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer">Открыть исходный пост <ExternalLink size={15} /></a>
                 {item.confirmationTelegramUrl && <a className="telegram-post-link" href={item.confirmationTelegramUrl} target="_blank" rel="noopener noreferrer">Открыть подтверждение <ExternalLink size={15} /></a>}
               </div>
