@@ -55,7 +55,7 @@ jobs:
       - name: Build Telegram map preview
         working-directory: preview
         env:
-          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-map/
+          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-map-v2/
         run: |
           npm ci
           npm run build
@@ -64,9 +64,9 @@ jobs:
 
       - name: Assemble production and isolated preview
         run: |
-          mkdir -p site/preview/telegram-map
+          mkdir -p site/preview/telegram-map-v2
           cp -R production/dist/. site/
-          cp -R preview/dist/. site/preview/telegram-map/
+          cp -R preview/dist/. site/preview/telegram-map-v2/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -79,7 +79,7 @@ jobs:
   deploy-preview:
     environment:
       name: github-pages
-      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-map/
+      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-map-v2/
     needs: build-preview
     runs-on: ubuntu-latest
     steps:
