@@ -120,6 +120,8 @@ import type {
 } from './domain/types';
 import { CompactMap } from './components/CompactMap';
 import { RecentlyRented, TelegramTop, useTelegramTop } from './components/TelegramTop';
+import { RegistryDashboardMetrics, TelegramPropertyRegistry, useTelegramRegistry } from './components/TelegramPropertyRegistry';
+import type { RegistryPrincipal } from './services/telegramRegistryPolicy';
 import { extractCoordinatesFromMapLink } from './services/propertyCoordinates';
 import { CURRENT_USER } from './config/runtime';
 
@@ -510,8 +512,17 @@ function getPageTitle(pathname: string) {
   return 'Главная';
 }
 
+function registryPrincipal(session: Session | null): RegistryPrincipal {
+  const role = session?.role === 'Администратор' ? 'admin' : session?.role === 'Оператор' ? 'operator' : 'agent';
+  const normalizedName = (session?.name || '').toLowerCase().replace(/[^a-z0-9_]+/g, '');
+  return { id: `agent:${normalizedName}`, role };
+}
+
 function DashboardPage() {
   const telegram = useTelegramTop();
+  const { session } = useCrm();
+  const principal = registryPrincipal(session);
+  const registry = useTelegramRegistry(principal);
 
   return (
     <PageFrame>
@@ -520,6 +531,7 @@ function DashboardPage() {
         <h2>Telegram-рейтинг объектов</h2>
         <p>Актуальные объекты, отсортированные по количеству репостов за текущий период.</p>
       </section>
+      <RegistryDashboardMetrics payload={registry.payload} />
       <section className="dashboardFeatureGrid">
         <TelegramTop {...telegram} />
         <CompactMap items={telegram.items} />
@@ -588,7 +600,7 @@ function PropertyStats({ properties }: { properties: Property[] }) {
 }
 
 function PropertiesPage() {
-  const { deleteProperty, properties, showToast } = useCrm();
+  const { deleteProperty, properties, session, showToast } = useCrm();
   const [addressQuery, setAddressQuery] = useState('');
   const [district, setDistrict] = useState('Все районы');
   const [dealType, setDealType] = useState('Все типы');
@@ -623,6 +635,7 @@ function PropertiesPage() {
         </Link>
       }
     >
+      <TelegramPropertyRegistry principal={registryPrincipal(session)} />
       <PropertyStats properties={properties} />
 
       <section className="workspace">

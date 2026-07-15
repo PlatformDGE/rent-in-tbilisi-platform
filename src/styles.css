@@ -1995,6 +1995,22 @@ textarea,
 .rentedDuration { color: #16805d; display: block; font-size: 13px; margin-top: 9px; }
 .lifecycleStatusText { color: #16805d; font-weight: 750; }
 .lifecycleMetrics { color: var(--muted); display: grid; font-size: 12px; gap: 3px; margin-top: 7px; }
+.registryMetricGrid { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.telegramRegistry { display: grid; gap: 18px; }
+.registryFilters { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.registryFilters label { color: var(--muted); display: grid; font-size: 12px; font-weight: 700; gap: 6px; }
+.registrySummary { color: var(--muted); font-size: 13px; margin: 0; }
+.registryGrid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.registryCard { background: var(--card-muted); border: 1px solid var(--border); border-radius: 16px; min-width: 0; overflow: hidden; }
+.registryMedia { align-items: center; background: var(--green-soft); display: flex; flex-direction: column; gap: 6px; height: 170px; justify-content: center; }
+.registryMedia img { height: 100%; object-fit: cover; width: 100%; }
+.registryMedia small { color: var(--muted); }
+.registryCardBody { padding: 14px; }
+.registryCardBody > strong { color: var(--accent); font-size: 18px; }
+.registryCardBody h3 { font-size: 15px; margin: 6px 0; }
+.registryCardBody p { font-size: 12px; margin: 4px 0; }
+.registryBadges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.registryBadges span { align-items: center; background: var(--green-soft); border-radius: 999px; color: var(--accent); display: inline-flex; font-size: 10px; font-weight: 750; gap: 3px; padding: 5px 7px; }
 
 .telegramCardBody { padding: 14px; }
 .telegramCardBody h3 { font-size: 15px; margin: 6px 0; }
@@ -2216,6 +2232,9 @@ table th {
   .workspace,
   .uiCard { border-radius: 17px; padding: 16px; }
   .compactMap { height: 290px; }
+  .registryMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .registryFilters,
+  .registryGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 390px) {

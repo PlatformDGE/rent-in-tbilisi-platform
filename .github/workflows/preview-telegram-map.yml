@@ -1,9 +1,9 @@
-name: Preview Telegram lifecycle
+name: Preview Telegram property registry
 
 on:
   push:
     branches:
-      - feature/telegram-map
+      - feature/telegram-property-registry
   workflow_dispatch:
 
 permissions:
@@ -52,22 +52,23 @@ jobs:
           done
           cp dist/index.html dist/404.html
 
-      - name: Build Telegram map preview
+      - name: Build Telegram property registry preview
         working-directory: preview
         env:
-          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-lifecycle-v3/
-          VITE_TELEGRAM_ASSET_BASE_URL: https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-map/
+          VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-property-registry/
+          VITE_TELEGRAM_ASSET_BASE_URL: https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-property-registry/
         run: |
           npm ci
           npm run build
-          curl --fail --location --retry 3 --output dist/telegram-top10.json https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-map/telegram-top10.json
+          curl --fail --location --retry 3 --output dist/telegram-top10.json https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-property-registry/telegram-top10.json
           node scripts/prepare-telegram-top10.mjs dist/telegram-top10.json
+          curl --fail --location --retry 3 --output dist/telegram-property-registry.json https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-property-registry/telegram-property-registry.json
 
       - name: Assemble production and isolated preview
         run: |
-          mkdir -p site/preview/telegram-lifecycle-v3
+          mkdir -p site/preview/telegram-property-registry
           cp -R production/dist/. site/
-          cp -R preview/dist/. site/preview/telegram-lifecycle-v3/
+          cp -R preview/dist/. site/preview/telegram-property-registry/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -80,7 +81,7 @@ jobs:
   deploy-preview:
     environment:
       name: github-pages
-      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-lifecycle-v3/
+      url: https://platformdge.github.io/rent-in-tbilisi-platform/preview/telegram-property-registry/
     needs: build-preview
     runs-on: ubuntu-latest
     steps:
