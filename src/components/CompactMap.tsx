@@ -39,7 +39,7 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
                     {item.price !== null && <div>${item.price.toLocaleString('en-US')}</div>}
                     {(item.area !== null || item.district || item.rooms !== null) && <small>{[item.area !== null ? `${item.area} м²` : '', item.district, item.rooms !== null ? `${item.rooms} спальни` : ''].filter(Boolean).join(' · ')}</small>}
                     {(item.metro || item.floor) && <small>{[item.metro ? `Метро: ${item.metro}` : '', item.floor ? `Этаж: ${item.floor}` : ''].filter(Boolean).join(' · ')}</small>}
-                    <b>↗ {item.daily_reposts} репостов</b>
+                    <b>↗ {item.repostCount} репостов</b>
                     <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>Открыть пост</a>
                   </div>
                 </Popup>
@@ -50,7 +50,7 @@ export function CompactMap({ items }: { items: TelegramItem[] }) {
       ) : (
         <EmptyStateCard title="Нет объектов с координатами" text="Объекты появятся на карте после добавления подтверждённых координат в Telegram-рейтинг." />
       )}
-      <p className="mapCoverage">На карте отображаются {mapped.length} из {items.length} объектов</p>
+      <p className="mapCoverage">На карте отображается {mapped.length} из {items.length} объектов с репостами</p>
     </section>
   );
 }

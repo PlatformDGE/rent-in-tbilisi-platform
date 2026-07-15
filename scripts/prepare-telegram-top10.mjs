@@ -8,6 +8,9 @@ if (!Array.isArray(payload.items)) payload.items = [];
 
 payload.items = payload.items.map((item) => ({
   ...item,
+  repostCount: Number.isFinite(Number(item.repostCount ?? item.daily_reposts))
+    ? Number(item.repostCount ?? item.daily_reposts)
+    : 0,
   latitude: typeof item.latitude === 'number' && Number.isFinite(item.latitude) ? item.latitude : null,
   longitude: typeof item.longitude === 'number' && Number.isFinite(item.longitude) ? item.longitude : null,
 }));

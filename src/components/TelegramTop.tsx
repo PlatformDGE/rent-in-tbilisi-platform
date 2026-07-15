@@ -16,6 +16,7 @@ export type TelegramItem = {
   rooms: number | null;
   floor: string;
   daily_reposts: number;
+  repostCount: number;
   current_forwards: number;
   published_at: string;
   post_url: string;
@@ -67,6 +68,9 @@ export function useTelegramTop() {
 
   const items = useMemo(() => (Array.isArray(payload?.items) ? payload.items : [])
     .filter((item) => item && typeof item.id === 'string' && isTelegramPostUrl(item.post_url))
+    .map((item) => ({ ...item, repostCount: Number(item.repostCount ?? item.daily_reposts) }))
+    .filter((item) => Number.isFinite(item.repostCount) && item.repostCount > 0)
+    .sort((left, right) => right.repostCount - left.repostCount)
     .slice(0, 10), [payload]);
 
   return { error, items, loading, reload };
@@ -79,7 +83,7 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
     <section className="telegramTop uiCard">
       <SectionHeader
         eyebrow="Telegram-аналитика"
-        title="Топ-10 объектов по репостам"
+        title="Топ объектов по репостам"
         description="Актуальные данные опубликованных Telegram-постов"
         actions={<button className="secondaryButton compactButton" onClick={() => void reload()} type="button">Обновить</button>}
       />
@@ -94,7 +98,7 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
               <div className="telegramMedia">
                 {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
                 <span className="rankBadge">№{index + 1}</span>
-                <span className="repostBadge">↗ {item.daily_reposts} {pluralizeReposts(item.daily_reposts)}</span>
+                <span className="repostBadge">↗ {item.repostCount} {pluralizeReposts(item.repostCount)}</span>
               </div>
               <div className="telegramCardBody">
                 {item.price !== null && <div className="telegramPrice">${item.price.toLocaleString('en-US')}</div>}
