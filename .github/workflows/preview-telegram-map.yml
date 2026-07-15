@@ -63,6 +63,10 @@ jobs:
           curl --fail --location --retry 3 --output dist/telegram-top10.json https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-property-registry/telegram-top10.json
           node scripts/prepare-telegram-top10.mjs dist/telegram-top10.json
           curl --fail --location --retry 3 --output dist/telegram-property-registry.json https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-property-registry/telegram-property-registry.json
+          for route in login properties properties/new post-preview telegram agents owners clients deals contracts reports map account profile analytics districts publications import settings; do
+            mkdir -p "dist/$route"
+            cp dist/index.html "dist/$route/index.html"
+          done
 
       - name: Assemble production and isolated preview
         run: |
