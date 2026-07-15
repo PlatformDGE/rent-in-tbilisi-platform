@@ -265,8 +265,9 @@ function AppProvider({ children }: { children: ReactNode }) {
 }
 
 export function App() {
+  const routerBase = import.meta.env.BASE_URL.replace(/\/$/, '');
   return (
-    <BrowserRouter basename="/rent-in-tbilisi-platform/">
+    <BrowserRouter basename={routerBase}>
       <AppProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
