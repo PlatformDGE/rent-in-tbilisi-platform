@@ -40,11 +40,13 @@ export function TelegramPropertyRegistry({ principal }: { principal: RegistryPri
   const registry = useTelegramRegistry(principal);
   const [district, setDistrict] = useState('Все районы');
   const [agent, setAgent] = useState('Все агенты');
+  const [status, setStatus] = useState('Все статусы');
   const [special, setSpecial] = useState('Все объекты');
   const districts = [...new Set(registry.properties.map((item) => item.district).filter(Boolean))].sort();
   const filtered = registry.properties.filter((item) => {
     if (district !== 'Все районы' && item.district !== district) return false;
     if (agent !== 'Все агенты' && item.assignedAgentId !== agent) return false;
+    if (status !== 'Все статусы' && item.lifecycleStatus !== status) return false;
     if (special === 'Есть репосты' && item.repostCount <= 0) return false;
     if (special === 'Без репостов' && item.repostCount > 0) return false;
     if (special === 'Нет координат' && item.coordinates) return false;
@@ -60,6 +62,7 @@ export function TelegramPropertyRegistry({ principal }: { principal: RegistryPri
           <div className="registryFilters">
             <label>Район<select value={district} onChange={(event) => setDistrict(event.target.value)}><option>Все районы</option>{districts.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label>Агент<select value={agent} onChange={(event) => setAgent(event.target.value)}><option>Все агенты</option>{registry.agents.map((value) => <option key={value.id} value={value.id}>#{value.agentHashtag}</option>)}</select></label>
+            <label>Статус<select value={status} onChange={(event) => setStatus(event.target.value)}><option>Все статусы</option><option value="active">Активные</option><option value="rented">Сданные</option><option value="sold">Проданные</option><option value="removed">Удалённые</option></select></label>
             <label>Фильтр<select value={special} onChange={(event) => setSpecial(event.target.value)}>{['Все объекты', 'Есть репосты', 'Без репостов', 'Нет координат', 'Не определён агент'].map((value) => <option key={value}>{value}</option>)}</select></label>
           </div>
           <p className="registrySummary">Показано {filtered.length} из {registry.properties.length}. С фото: {registry.payload?.report.withRealMedia ?? 0}. Без агента: {registry.payload?.report.unassignedAgents ?? 0}.</p>
