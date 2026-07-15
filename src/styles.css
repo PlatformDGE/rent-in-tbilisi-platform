@@ -1974,6 +1974,22 @@ textarea,
 
 .rankBadge { background: var(--accent); left: 10px; }
 .repostBadge { background: rgba(15, 23, 42, 0.82); right: 10px; }
+.channelAgeBadge,
+.rentedBadge {
+  border-radius: 999px;
+  bottom: 9px;
+  font-size: 10px;
+  font-weight: 850;
+  left: 10px;
+  padding: 6px 9px;
+  position: absolute;
+}
+.channelAgeBadge { background: #eef4ff; color: var(--accent); }
+.rentedBadge { background: #16805d; color: #fff; letter-spacing: 0.08em; }
+.recentlyRented { margin-top: 20px; }
+.rentedCardGrid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.rentedPropertyCard { border-color: color-mix(in srgb, #16805d 28%, var(--border)); }
+.rentedDuration { color: #16805d; display: block; font-size: 13px; margin-top: 9px; }
 
 .telegramCardBody { padding: 14px; }
 .telegramCardBody h3 { font-size: 15px; margin: 6px 0; }

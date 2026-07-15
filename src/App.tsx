@@ -119,7 +119,7 @@ import type {
   Toast,
 } from './domain/types';
 import { CompactMap } from './components/CompactMap';
-import { TelegramTop, useTelegramTop } from './components/TelegramTop';
+import { RecentlyRented, TelegramTop, useTelegramTop } from './components/TelegramTop';
 import { extractCoordinatesFromMapLink } from './services/propertyCoordinates';
 import { CURRENT_USER } from './config/runtime';
 
@@ -523,6 +523,7 @@ function DashboardPage() {
         <TelegramTop {...telegram} />
         <CompactMap items={telegram.items} />
       </section>
+      <RecentlyRented items={telegram.recentlyRented} />
     </PageFrame>
   );
 }

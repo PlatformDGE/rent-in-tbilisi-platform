@@ -23,13 +23,34 @@ export type TelegramItem = {
   image: string;
   latitude: number | null;
   longitude: number | null;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
+  daysOnChannel?: number;
+  lifecycleStatus?: 'active' | 'rented' | 'removed';
+  rentedAt?: string | null;
+  daysUntilRented?: number | null;
+  propertyKey?: string;
 };
 
 type TelegramPayload = {
   status: string;
   updated_at: string;
   items: TelegramItem[];
+  recentlyRented?: TelegramItem[];
 };
+
+function dayWord(value: number) {
+  const mod100 = value % 100;
+  const mod10 = value % 10;
+  if (mod100 >= 11 && mod100 <= 14) return 'дней';
+  if (mod10 === 1) return 'день';
+  if (mod10 >= 2 && mod10 <= 4) return 'дня';
+  return 'дней';
+}
+
+function channelLabel(days: number) {
+  return days <= 1 ? 'Сегодня на канале' : `${days} ${dayWord(days)} на канале`;
+}
 
 function isTelegramPostUrl(value: string) {
   return /^https:\/\/t\.me\/rent_tbilisi_ge\/\d+$/.test(value);
@@ -73,7 +94,11 @@ export function useTelegramTop() {
     .sort((left, right) => right.repostCount - left.repostCount)
     .slice(0, 10), [payload]);
 
-  return { error, items, loading, reload };
+  const recentlyRented = useMemo(() => (Array.isArray(payload?.recentlyRented) ? payload.recentlyRented : [])
+    .filter((item) => item?.lifecycleStatus === 'rented' && typeof item.post_url === 'string' && isTelegramPostUrl(item.post_url))
+    .slice(0, 5), [payload]);
+
+  return { error, items, loading, recentlyRented, reload };
 }
 
 type TelegramTopProps = ReturnType<typeof useTelegramTop>;
@@ -99,6 +124,9 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
                 {item.image ? <img alt={item.title || 'Объект из Telegram'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
                 <span className="rankBadge">№{index + 1}</span>
                 <span className="repostBadge">↗ {item.repostCount} {pluralizeReposts(item.repostCount)}</span>
+                {index < 3 && typeof item.daysOnChannel === 'number' && (
+                  <span className="channelAgeBadge">{channelLabel(item.daysOnChannel)}</span>
+                )}
               </div>
               <div className="telegramCardBody">
                 {item.price !== null && <div className="telegramPrice">${item.price.toLocaleString('en-US')}</div>}
@@ -110,6 +138,35 @@ export function TelegramTop({ error, items, loading, reload }: TelegramTopProps)
                 <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
                   Открыть пост <ExternalLink size={15} />
                 </a>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function RecentlyRented({ items }: { items: TelegramItem[] }) {
+  return (
+    <section className="recentlyRented uiCard">
+      <SectionHeader eyebrow="Lifecycle" title="Недавно сданы" description="Только объекты с подтверждённым событием сдачи" />
+      {items.length === 0 ? (
+        <EmptyStateCard title="Подтверждённых сдач пока нет" text="Объекты появятся здесь после подтверждения сдачи в Telegram или CRM." />
+      ) : (
+        <div className="telegramCardGrid rentedCardGrid">
+          {items.map((item) => (
+            <article className="telegramPropertyCard rentedPropertyCard" data-telegram-id={item.id} key={item.propertyKey ?? item.id}>
+              <div className="telegramMedia">
+                {item.image ? <img alt={item.title || 'Сданный объект'} src={new URL(item.image, TELEGRAM_ASSET_BASE_URL).toString()} /> : <MessageCircle size={30} />}
+                <span className="rentedBadge">СДАНО</span>
+              </div>
+              <div className="telegramCardBody">
+                {item.price !== null && <div className="telegramPrice">${item.price.toLocaleString('en-US')}</div>}
+                {item.title && <h3>{item.title}</h3>}
+                {item.district && <p>{item.district}</p>}
+                {typeof item.daysUntilRented === 'number' && <strong className="rentedDuration">Сдано за {item.daysUntilRented} {dayWord(item.daysUntilRented)}</strong>}
+                <a className="telegram-post-link" href={item.post_url} target="_blank" rel="noopener noreferrer">Открыть исходный пост <ExternalLink size={15} /></a>
               </div>
             </article>
           ))}
