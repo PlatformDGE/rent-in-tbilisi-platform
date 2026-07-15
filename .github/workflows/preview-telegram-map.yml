@@ -56,6 +56,7 @@ jobs:
         working-directory: preview
         env:
           VITE_PUBLIC_BASE_URL: /rent-in-tbilisi-platform/preview/telegram-map-v2/
+          VITE_TELEGRAM_ASSET_BASE_URL: https://raw.githubusercontent.com/PlatformDGE/-rentintbilisi-crm/feature/telegram-map/
         run: |
           npm ci
           npm run build
