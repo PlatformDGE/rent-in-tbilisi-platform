@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

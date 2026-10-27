@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
 type PublishPayload = {

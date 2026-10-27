@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import { buildingTypes, heatingOptions, MAX_TELEGRAM_PHOTOS, renovationTypes } from './constants';
 import type { BrandSettings, Category, DealType, PetPolicy, PostLanguage, Property } from './types';
 import { safeNumber } from './formatters';
