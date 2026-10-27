@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import type { Property } from '../domain/types';
 
 export type Coordinates = { latitude: number; longitude: number };

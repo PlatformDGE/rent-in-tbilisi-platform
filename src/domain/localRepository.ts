@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import {
   AGENT_STORAGE_KEY,
   CLIENT_STORAGE_KEY,

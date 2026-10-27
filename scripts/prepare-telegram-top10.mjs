@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 import { readFile, writeFile } from 'node:fs/promises';
 
 const [filePath] = process.argv.slice(2);

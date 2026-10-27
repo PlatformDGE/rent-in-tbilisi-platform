@@ -1,3 +1,4 @@
+// Made with Claude (Anthropic) · © Homes in Georgia · Created by Irakli Kvirkvelia
 export type DealType = 'Rent' | 'Sale' | 'Daily Rent';
 export type Category = 'Apartment' | 'House' | 'Commercial' | 'Land' | 'Office' | 'Hotel';
 export type PropertyStatus = 'New' | 'In Progress' | 'On Advertising' | 'Reserved' | 'Rented' | 'Sold' | 'Archived';
